@@ -85,6 +85,10 @@
                             <th style="width: 60px"><label>Zoom:</label></th>
                             <td id="status-view-zoom"></td>
                         </tr>
+                        <tr>
+                            <th style="width: 60px"><label>FPS:</label></th>
+                            <td id="status-render-time"></td>
+                        </tr>
                     </table>
                 </div>
             </div>
@@ -94,6 +98,12 @@
             <div id="sim-window-div"></div>
             <canvas id="sim-window-canvas"></canvas>
             <!-- sim window END -->
+            
+            <div style="width: 0px; height: 0px; overflow: hidden;">
+                <img id="gate-nand" src="images/gate-nand.png" />
+                <img id="pin-output" src="images/pin-output.png" />
+                <img id="pin-input" src="images/pin-input.png" />
+            </div>
         </div>
        
     </body>

@@ -25,7 +25,7 @@ function cpuSimWindowResize()
     $('#sim-window-canvas').height(h-twH);
     
     $('#sim-window-canvas').attr('width', w);
-    $('#sim-window-canvas').attr('height', h);
+    $('#sim-window-canvas').attr('height', h-twH);
     
     if (cpuSimEditorCoordinates!==null)
         cpuSimEditorCoordinates.updateCanvasDim();

@@ -1,6 +1,6 @@
-var SIM_FPS = 40.0;
+var SIM_FPS = 25.0;
 var SIM_FRAME_TIME = 1000.0/SIM_FPS;
-var SIM_INTERVAL_ID;
+var SIM_RENDER_TIMER_ID;
 
 var PIN_SIZE = 6;
 
@@ -76,10 +76,27 @@ function CpuSimEditor()
 {
     var editMode = null;
     var m = new Module();
+    var pix = null;
+    var selectedObj = new Array();
     
     
     this.redrawStart = function() {
-        SIM_INTERVAL_ID = setInterval("cpuSimEditor.render();", Math.round(SIM_FRAME_TIME));
+        var fps;
+        var frameTime;
+        
+        helperExecTimeStart();
+        
+        cpuSimEditor.render();
+                
+        frameTime = parseFloat( helperExecTimeEnd() );
+        if (frameTime!=0.0) {
+            fps = 1.0 / frameTime;
+            $('#status-render-time').html(helperNumberFormat(fps, 1, '.', ''));
+        } else {
+            $('#status-render-time').html('many :)');
+        }
+        
+        SIM_RENDER_TIMER_ID = setTimeout("cpuSimEditor.redrawStart()", 10);
     }
     
     this.newProject = function() {
@@ -94,131 +111,141 @@ function CpuSimEditor()
         i = 0;
         for (y=0; y<100*50; y+=50)
             for (x=0; x<100*50; x+=50) {
-                
                 vec.setX(x);
                 vec.setY(y);
                 this.addObject(vec, 'GateNand');
-                //console.log(vec.toString());
                 i++;
             }
-        console.log('Dodano: '+i);
+        console.log('Benchmark - dodano: '+i);
     }
     
-    this.__renderInDivNew = function(unique, moduleObj, obj) {
-        var cssClass;
-        var pinArr;
-        var i;
-
-        switch (obj.getObjClass()) {
-            case 'GateNand': cssClass = 'gate-nand'; break;
-            case 'GateAnd':  cssClass = 'gate-and';  break;
-            case 'GateOr':   cssClass = 'gate-or';   break;
-            case 'GateNot':  cssClass = 'gate-not';  break;
-            case 'GateXor':  cssClass = 'gate-xor';  break;
-            case 'GateNor':  cssClass = 'gate-nor';  break;
-            case 'GateXnor': cssClass = 'gate-xnor'; break;
-        }
-        
-        $('#sim-window-div').append('<div id="'+unique+'" class="'+cssClass+'" style="top: 0px; left: 0px; width: 0px; height: 0px;"></div>');
-        pinArr = obj.getInputBitsLocations();
-        for (i=0; i<pinArr.length; i++) {
-            $('#'+unique).append('<div class="in in-'+i+'" pin="'+i+'" style="top: 0px; left: 0px; width: 0px; height: 0px;">&nbsp;</div>');
-        }
-        pinArr = obj.getOutputBitsLocations();
-        for (i=0; i<pinArr.length; i++) {
-            $('#'+unique).append('<div class="out out-'+i+'" pin="'+i+'" style="top: 0px; left: 0px; width: 0px; height: 0px;">&nbsp;</div>');
-        }
-    }
-    
-    this.__renderInDivUpdate = function(unique, moduleObj, obj) {
-        var canvasPix;
-        var w, h, x, y, pin;
-        var pinArr;
-        var i;
+    this.getCanvasModuleObj = function(moduleObj, objXY, objDim) {
         var p, s;
-        var jQpin;
+        var obj;
+        var tmp;
         
+        obj = moduleObj.getObj();
         p = moduleObj.getPos();
         s = obj.getSize();
         
-        canvasPix = cpuSimEditorCoordinates.toCanvas(p);
-        w = cpuSimEditorCoordinates.toCanvasUnit(s.getX());
-        h = cpuSimEditorCoordinates.toCanvasUnit(s.getY());
-
-        $('#'+unique).css('left', canvasPix.getX()+'px');
-        $('#'+unique).css('top', canvasPix.getY()+'px');
-        $('#'+unique).css('width', w+'px');
-        $('#'+unique).css('height', h+'px');
-        
-        pinArr = obj.getInputBitsLocations();
-        for (i=0; i<pinArr.length; i++) {
-            x = cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getX() );
-            y = cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getY() );
-            pin = cpuSimEditorCoordinates.toCanvasUnit( PIN_SIZE );
-            
-            jQpin = $('#'+unique).find('> div.in-'+i);
-            jQpin.css('left', x+'px');
-            jQpin.css('top', y+'px');
-            jQpin.css('width', pin+'px');
-            jQpin.css('height', pin+'px');
-        }
-        pinArr = obj.getOutputBitsLocations();
-        for (i=0; i<pinArr.length; i++) {
-            x = cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getX() );
-            y = cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getY() );
-            pin = cpuSimEditorCoordinates.toCanvasUnit( PIN_SIZE );
-
-            jQpin = $('#'+unique).find('> div.out-'+i);
-            jQpin.css('left', x+'px');
-            jQpin.css('top', y+'px');
-            jQpin.css('width', pin+'px');
-            jQpin.css('height', pin+'px');
-        }
+        tmp = cpuSimEditorCoordinates.toCanvas(p);
+        objXY.setX(tmp.getX());
+        objXY.setY(tmp.getY());
+        objDim.setX( cpuSimEditorCoordinates.toCanvasUnit(s.getX()) );
+        objDim.setY( cpuSimEditorCoordinates.toCanvasUnit(s.getY()) );
     }
     
     this.__renderInCanvas = function(unique, moduleObj, obj, ctx) {
         var canvasPix;
-        var w, h, x, y, pin;
+        var w, h, x, y;
+        var objXY = new Vector2d();
+        var objDim = new Vector2d();
+        var pinX, pinY, pin;
         var pinArr;
         var i;
         var p, s;
-        var jQpin;
         
+        /*
         p = moduleObj.getPos();
         s = obj.getSize();
+        */
         
+        this.getCanvasModuleObj(moduleObj, objXY, objDim);
+        /*
         canvasPix = cpuSimEditorCoordinates.toCanvas(p);
+        x = canvasPix.getX();
+        y = canvasPix.getY();
         w = cpuSimEditorCoordinates.toCanvasUnit(s.getX());
         h = cpuSimEditorCoordinates.toCanvasUnit(s.getY());
+        */
         
-        ctx.strokeStyle = '#f00'; // red
-        ctx.lineWidth = 1;
-        ctx.strokeRect(canvasPix.getX(), canvasPix.getY(), w, h);
+        // draw gate
+        ctx.drawImage(document.getElementById('gate-nand'), objXY.getX(), objXY.getY(), objDim.getX(), objDim.getY());
 
-        /*
         pinArr = obj.getInputBitsLocations();
         for (i=0; i<pinArr.length; i++) {
-            x = cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getX() );
-            y = cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getY() );
+            pinX = x + cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getX() );
+            pinY = y + cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getY() );
             pin = cpuSimEditorCoordinates.toCanvasUnit( PIN_SIZE );
             
-            jQpin = $('#'+unique).find('> div.in-'+i);
-            jQpin.css('left', x+'px');
-            jQpin.css('top', y+'px');
-            jQpin.css('width', pin+'px');
-            jQpin.css('height', pin+'px');
+            ctx.drawImage(document.getElementById('pin-input'), pinX, pinY, pin, pin);
         }
         pinArr = obj.getOutputBitsLocations();
         for (i=0; i<pinArr.length; i++) {
-            x = cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getX() );
-            y = cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getY() );
+            pinX = x + cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getX() );
+            pinY = y + cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getY() );
             pin = cpuSimEditorCoordinates.toCanvasUnit( PIN_SIZE );
 
-            jQpin = $('#'+unique).find('> div.out-'+i);
-            jQpin.css('left', x+'px');
-            jQpin.css('top', y+'px');
-            jQpin.css('width', pin+'px');
-            jQpin.css('height', pin+'px');
+            ctx.drawImage(document.getElementById('pin-output'), pinX, pinY, pin, pin);
+        }
+    }
+    
+    this.setPix = function(ctx, r, g, b, a) {
+        var pixRGBA;
+        
+        if (pix===null)
+            pix = ctx.createImageData(1,1);
+        
+        pixRGBA  = pix.data;
+        pixRGBA[0] = r;
+        pixRGBA[1] = g;
+        pixRGBA[2] = b;
+        pixRGBA[3] = a;
+    }
+    
+    this.__renderGrid = function(ctx) {
+        var x, y;
+        var xyVec = new Vector2d();
+        var left, right, top, bottom, RADIUS, GRID;
+        
+        GRID = 10.0;
+        RADIUS = 2000.0;
+        left = -RADIUS;
+        right = RADIUS;
+        top = -RADIUS;
+        bottom = RADIUS;
+        
+        ctx.strokeStyle = '#2a2a2a';
+        
+        for (y=top; y<=bottom; y+=GRID) {
+            ctx.beginPath();
+            xyVec.setX(left);
+            xyVec.setY(y);
+            xyVec = cpuSimEditorCoordinates.toCanvas(xyVec);
+            ctx.moveTo(xyVec.getX(), xyVec.getY());
+            
+            xyVec.setX(right);
+            xyVec.setY(y);
+            xyVec = cpuSimEditorCoordinates.toCanvas(xyVec);
+            ctx.lineTo(xyVec.getX(), xyVec.getY());
+            ctx.closePath();
+            ctx.stroke();
+        }
+        
+        for (x=left; x<=right; x+=GRID) {
+            ctx.beginPath();
+            xyVec.setX(x);
+            xyVec.setY(top);
+            xyVec = cpuSimEditorCoordinates.toCanvas(xyVec);
+            ctx.moveTo(xyVec.getX(), xyVec.getY());
+            
+            xyVec.setX(x);
+            xyVec.setY(bottom);
+            xyVec = cpuSimEditorCoordinates.toCanvas(xyVec);
+            ctx.lineTo(xyVec.getX(), xyVec.getY());
+            ctx.closePath();
+            ctx.stroke();
+        }
+        
+        /*
+        this.setPix(ctx, 255, 255, 0, 255);
+        for (y=-100; y<=100; y+=10) {
+            for (x=-100; x<=100; x+=10) {
+                xyVec.setX(x);
+                xyVec.setY(y);
+                //xyVec = cpuSimEditorCoordinates.toCanvas(xyVec);
+                //ctx.putImageData(pix, xyVec.getX(), xyVec.getY());
+            }
         }
         */
     }
@@ -226,43 +253,21 @@ function CpuSimEditor()
     this.render = function() {
         var objs = m.getModuleObjs();
         var i;
-        var unique, s, p, moduleObj, obj;
-        
-        // render in DIV
-        /*
-        $('#sim-window-div > div').addClass('delme');
-        for (i=2; i<objs.length; i++) {
-            unique = objs[i].getName();
-            moduleObj = objs[i];
-            obj = moduleObj.getObj();
-
-            if ($('#'+unique).size()==0)
-                this.__renderInDivNew(unique, moduleObj, obj); // create div
-
-            this.__renderInDivUpdate(unique, moduleObj, obj);  // update div
-            
-            $('#'+unique).removeClass('delme');
-        }
-        
-        $('#sim-window-div > div.delme').remove();
-        */
-        
-        
-        // render in CANVAS
+        var unique, moduleObj, obj;
         var canvas, ctx;
+        
 
         canvas = document.getElementById('sim-window-canvas');
         ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        this.__renderGrid(ctx);
+        
         for (i=2; i<objs.length; i++) {
             unique = objs[i].getName();
             moduleObj = objs[i];
             obj = moduleObj.getObj();
-
             this.__renderInCanvas(unique, moduleObj, obj, ctx);
         }
-        
-        
     }
     
     this.addObject = function(internalPixel, type) {
@@ -277,8 +282,20 @@ function CpuSimEditor()
         // align to grid and set position
         internalPixel = cpuSimEditorCoordinates.alignToGrid(internalPixel);
         moduleObj.setPos(internalPixel);
+    }
+    
+    this.selectObject = function(internalPixel) {
+        var objs = m.getModuleObjs();
+        var i;
         
-        //this.render();
+        
+        
+        for (i=2; i<objs.length; i++) {
+            unique = objs[i].getName();
+            moduleObj = objs[i];
+            obj = moduleObj.getObj();
+            this.__renderInCanvas(unique, moduleObj, obj, ctx);
+        }
     }
     
     this.editingModeChange = function(obj) {
@@ -288,17 +305,23 @@ function CpuSimEditor()
     }
     
     this.mouseDragLeft = function(internalDelta) {
+        switch (editMode) {
+            case EDIT_MODE_SELECT: 
+                                     break;
+            case EDIT_MODE_MOVE:     
+                                     break;
+        }
     }
     
     this.mouseDragRight = function(internalDelta) {
         cpuSimEditorCoordinates.viewCenterMove(internalDelta);
-        //this.render();
     }
     
     this.mouseLeftClick = function(internalPixel) {
         switch (editMode) {
             case EDIT_MODE_INTERACT: 
                                      break;
+            case EDIT_MODE_SELECT:   this.selectObject(internalPixel);
             case EDIT_MODE_NAND:     this.addObject(internalPixel, 'GateNand');
                                      break;
         }

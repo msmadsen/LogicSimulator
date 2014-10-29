@@ -134,7 +134,7 @@ function helperExecTimeEnd()
 {
     var end = new Date().getTime();
     var time = end - execTimeStart;
-    return helperNumberFormat((time/1000.0), 3, '.', ' ');
+    return helperNumberFormat((time/1000.0), 3, '.', '');
 }
 
 String.prototype.replaceAt = function(index, chr)
