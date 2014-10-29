@@ -19,6 +19,17 @@
         <link rel="stylesheet" href="css/style.css" />
         <link rel="stylesheet" href="css/OkiWidgets.css" />
 
+        <script>
+            $(document).ready(function() {
+                setTimeout(function() {
+                    cpuSimEditor.quickLoad();
+                    $('#simLoopsPerFrame').val(10);
+                    cpuSimEditor.simParamsUpdate();
+                    cpuSimEditor.simStartStopToogle();
+                }, 1000);
+            });
+        </script>
+        
     </head>
 
     <body>
@@ -26,14 +37,17 @@
             
             <!-- top widgets -->
             <div id="top-widgets">
-                <a href="javascript:void(0)" onClick="cpuSimEditor.benchmark();" style="color: #7fa8d2; font-size: 24px; line-height: 24px; display: block; padding: 10px 0 13px 10px; font-weight: bold;">LogicSim</a>
+                <a href="javascript:void(0)" onClick_="cpuSimEditor.benchmark();" style="color: #7fa8d2; font-size: 24px; line-height: 24px; display: block; padding: 10px 0 13px 10px; font-weight: bold;">LogicSim</a>
 
                 <div id="editing-modes">
                     <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="1">Interact</a>
                     <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="2">Select</a>
                     <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="3">Move</a>
                     <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="4">NAND</a>
-                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="5">Wire</a>
+                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="5">Input</a>
+                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="6">Wire</a>
+                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="7">Wire link</a>
+                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="8">Output</a>
                     <!--       
                     <a href="javascript:void(0)">AND</a>
                     <a href="javascript:void(0)">OR</a>
@@ -43,10 +57,34 @@
                     <a href="javascript:void(0)">XNOR</a>
                     -->
                 </div>
+                <div id="simulation-control">                    
+                    <div class="simulation-box">
+                        <a href="javascript:void(0)" onClick="cpuSimEditor.simStartStopToogle();" class="button-simulation-startstop stopped">&nbsp;</a>
+                    </div>
+                    <div class="simulation-box">
+                        <input id="gateDelaySim" type="radio" name="simulation" value="0" checked="checked" onChange="cpuSimEditor.simParamsUpdate()" />
+                        <label for="gateDelaySim" class="radio-label">GateDelaySim</label>
+                        <label for="gateDelay">GateDelay (ms):</label>
+                        <input id="gateDelay" type="text" name="gateDelay" value="500" onChange="cpuSimEditor.simParamsUpdate()" />
+                        <label for="clock">Clock (Hz):</label>
+                        <input id="clock" type="text" name="clock" value="1" onChange="cpuSimEditor.simParamsUpdate()" />
+                    </div>
+                    <div class="simulation-box">
+                        <input id="stableNetSim" type="radio" name="simulation" value="1" onChange="cpuSimEditor.simParamsUpdate()" />
+                        <label for="stableNetSim" class="radio-label">StableNewSim</label>
+                    </div>
+                    <div class="simulation-box">
+                        <label for="clock">SimLoopsPerFrame:</label>
+                        <input id="simLoopsPerFrame" type="text" name="simLoopsPerFrame" value="1" onChange="cpuSimEditor.simParamsUpdate()" />
+                    </div>
+
+                    <div class="clear">&nbsp;</div>
+                </div>
             </div>
             <!-- top widgets END -->
             
             <!-- object properties -->
+            <!--
             <div class="properties-cont properties-obj">
                 <div class="h">Obiekt</div>
                 <div class="p">
@@ -66,28 +104,57 @@
                     </table>
                 </div>
             </div>
+            -->
             <!-- object properties END -->
             
             <!-- status -->
             <div class="properties-cont properties-status">
                 <div class="h">Status</div>
                 <div class="p">
-                    <table cellpadding="0" cellspacing="0" style="width: 120px;">
+                    <table cellpadding="0" cellspacing="0" style="width: 180px;">
                         <tr>
-                            <th style="width: 60px"><label>Mouse X:</label></th>
+                            <th style="width: 90px"><label>Mouse X:</label></th>
                             <td id="status-mouse-x"></td>
                         </tr>
                         <tr>
-                            <th style="width: 60px"><label>Mouse Y:</label></th>
+                            <th style="width: 90px"><label>Mouse Y:</label></th>
                             <td id="status-mouse-y"></td>
                         </tr>
                         <tr>
-                            <th style="width: 60px"><label>Zoom:</label></th>
+                            <th style="width: 90px"><label>Zoom:</label></th>
                             <td id="status-view-zoom"></td>
                         </tr>
                         <tr>
-                            <th style="width: 60px"><label>FPS:</label></th>
-                            <td id="status-render-time"></td>
+                            <th style="width: 90px"><label>Real FPS:</label></th>
+                            <td id="status-real-fps"></td>
+                        </tr>
+                        <tr>
+                            <th style="width: 90px"><label>Max FPS:</label></th>
+                            <td id="status-max-fps"></td>
+                        </tr>
+                        <tr>
+                            <th style="width: 90px"><label>Render iddle:</label></th>
+                            <td id="status-render-iddle"></td>
+                        </tr>
+                        <tr>
+                            <th style="width: 90px"><label>&nbsp;</label></th>
+                            <td><a href="javascript:void(0)" onClick="cpuSimEditor.quickSave()">Save</a></td>
+                        </tr>
+                        <tr>
+                            <th style="width: 90px"><label>&nbsp;</label></th>
+                            <td><a href="javascript:void(0)" onClick="cpuSimEditor.quickLoad()">Load</a></td>
+                        </tr>
+                        <tr>
+                            <th style="width: 90px"><label>Stable?</label></th>
+                            <td id="non-stable-state"></td>
+                        </tr>
+                        <tr>
+                            <th style="width: 90px"><label>OneLoopSpeed (ms):</label></th>
+                            <td id="one-loop-speed"></td>
+                        </tr>
+                        <tr>
+                            <th style="width: 90px"><label>:</label></th>
+                            <td></td>
                         </tr>
                     </table>
                 </div>
@@ -96,7 +163,7 @@
             
             <!-- console -->
             <div class="properties-cont properties-console">
-                <div class="h">Status</div>
+                <div class="h">Console</div>
                 <div class="p" style="width: 200px; height: 120px;" id="console">
                     
                 </div>
@@ -109,12 +176,65 @@
             <!-- sim window END -->
             
             <div style="width: 0px; height: 0px; overflow: hidden;">
-                <img id="gate-nand" src="images/gate-nand.png" />
-                <img id="gate-nand-s" src="images/gate-nand_selected.png" />
-                <img id="pin-output" src="images/pin-output.png" />
-                <img id="pin-output-s" src="images/pin-output_selected.png" />
-                <img id="pin-input" src="images/pin-input.png" />
-                <img id="pin-input-s" src="images/pin-input_selected.png" />
+                <img id="GateNand_sel-0_state-0_rot-0" src="images/generic/GateNand_sel-0_state-0_rot-0.png" />
+                <img id="GateNand_sel-0_state-0_rot-1" src="images/generic/GateNand_sel-0_state-0_rot-1.png" />
+                <img id="GateNand_sel-0_state-0_rot-2" src="images/generic/GateNand_sel-0_state-0_rot-2.png" />
+                <img id="GateNand_sel-0_state-0_rot-3" src="images/generic/GateNand_sel-0_state-0_rot-3.png" />
+                <img id="GateNand_sel-1_state-0_rot-0" src="images/generic/GateNand_sel-1_state-0_rot-0.png" />
+                <img id="GateNand_sel-1_state-0_rot-1" src="images/generic/GateNand_sel-1_state-0_rot-1.png" />
+                <img id="GateNand_sel-1_state-0_rot-2" src="images/generic/GateNand_sel-1_state-0_rot-2.png" />
+                <img id="GateNand_sel-1_state-0_rot-3" src="images/generic/GateNand_sel-1_state-0_rot-3.png" />
+                
+                <img id="Input_sel-0_state-0_rot-0" src="images/generic/Input_sel-0_state-0_rot-0.png" />
+                <img id="Input_sel-0_state-0_rot-1" src="images/generic/Input_sel-0_state-0_rot-1.png" />
+                <img id="Input_sel-0_state-0_rot-2" src="images/generic/Input_sel-0_state-0_rot-2.png" />
+                <img id="Input_sel-0_state-0_rot-3" src="images/generic/Input_sel-0_state-0_rot-3.png" />
+                <img id="Input_sel-0_state-1_rot-0" src="images/generic/Input_sel-0_state-1_rot-0.png" />
+                <img id="Input_sel-0_state-1_rot-1" src="images/generic/Input_sel-0_state-1_rot-1.png" />
+                <img id="Input_sel-0_state-1_rot-2" src="images/generic/Input_sel-0_state-1_rot-2.png" />
+                <img id="Input_sel-0_state-1_rot-3" src="images/generic/Input_sel-0_state-1_rot-3.png" />
+                
+                <img id="Input_sel-1_state-0_rot-0" src="images/generic/Input_sel-1_state-0_rot-0.png" />
+                <img id="Input_sel-1_state-0_rot-1" src="images/generic/Input_sel-1_state-0_rot-1.png" />
+                <img id="Input_sel-1_state-0_rot-2" src="images/generic/Input_sel-1_state-0_rot-2.png" />
+                <img id="Input_sel-1_state-0_rot-3" src="images/generic/Input_sel-1_state-0_rot-3.png" />
+                <img id="Input_sel-1_state-1_rot-0" src="images/generic/Input_sel-1_state-1_rot-0.png" />
+                <img id="Input_sel-1_state-1_rot-1" src="images/generic/Input_sel-1_state-1_rot-1.png" />
+                <img id="Input_sel-1_state-1_rot-2" src="images/generic/Input_sel-1_state-1_rot-2.png" />
+                <img id="Input_sel-1_state-1_rot-3" src="images/generic/Input_sel-1_state-1_rot-3.png" />
+                
+                <img id="Output_sel-0_state-0_rot-0" src="images/generic/Output_sel-0_state-0_rot-0.png" />
+                <img id="Output_sel-0_state-0_rot-1" src="images/generic/Output_sel-0_state-0_rot-1.png" />
+                <img id="Output_sel-0_state-0_rot-2" src="images/generic/Output_sel-0_state-0_rot-2.png" />
+                <img id="Output_sel-0_state-0_rot-3" src="images/generic/Output_sel-0_state-0_rot-3.png" />
+                <img id="Output_sel-0_state-1_rot-0" src="images/generic/Output_sel-0_state-1_rot-0.png" />
+                <img id="Output_sel-0_state-1_rot-1" src="images/generic/Output_sel-0_state-1_rot-1.png" />
+                <img id="Output_sel-0_state-1_rot-2" src="images/generic/Output_sel-0_state-1_rot-2.png" />
+                <img id="Output_sel-0_state-1_rot-3" src="images/generic/Output_sel-0_state-1_rot-3.png" />
+
+                <img id="Output_sel-1_state-0_rot-0" src="images/generic/Output_sel-1_state-0_rot-0.png" />
+                <img id="Output_sel-1_state-0_rot-1" src="images/generic/Output_sel-1_state-0_rot-1.png" />
+                <img id="Output_sel-1_state-0_rot-2" src="images/generic/Output_sel-1_state-0_rot-2.png" />
+                <img id="Output_sel-1_state-0_rot-3" src="images/generic/Output_sel-1_state-0_rot-3.png" />
+                <img id="Output_sel-1_state-1_rot-0" src="images/generic/Output_sel-1_state-1_rot-0.png" />
+                <img id="Output_sel-1_state-1_rot-1" src="images/generic/Output_sel-1_state-1_rot-1.png" />
+                <img id="Output_sel-1_state-1_rot-2" src="images/generic/Output_sel-1_state-1_rot-2.png" />
+                <img id="Output_sel-1_state-1_rot-3" src="images/generic/Output_sel-1_state-1_rot-3.png" />
+                
+                <img id="WireLink_sel-0_state-0_rot-0" src="images/generic/WireLink_sel-0_state-0_rot-0.png" />
+                <img id="WireLink_sel-0_state-0_rot-1" src="images/generic/WireLink_sel-0_state-0_rot-1.png" />
+                <img id="WireLink_sel-0_state-0_rot-2" src="images/generic/WireLink_sel-0_state-0_rot-2.png" />
+                <img id="WireLink_sel-0_state-0_rot-3" src="images/generic/WireLink_sel-0_state-0_rot-3.png" />
+                <img id="WireLink_sel-1_state-0_rot-0" src="images/generic/WireLink_sel-1_state-0_rot-0.png" />
+                <img id="WireLink_sel-1_state-0_rot-1" src="images/generic/WireLink_sel-1_state-0_rot-1.png" />
+                <img id="WireLink_sel-1_state-0_rot-2" src="images/generic/WireLink_sel-1_state-0_rot-2.png" />
+                <img id="WireLink_sel-1_state-0_rot-3" src="images/generic/WireLink_sel-1_state-0_rot-3.png" />
+                
+                
+                <img id="pin-output" src="images/generic/PinOut_sel-0.png" />
+                <img id="pin-output-s" src="images/generic/PinOut_sel-1.png" />
+                <img id="pin-input" src="images/generic/PinIn_sel-0.png" />
+                <img id="pin-input-s" src="images/generic/PinIn_sel-1.png" />
             </div>
         </div>
        

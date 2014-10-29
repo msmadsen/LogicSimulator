@@ -61,11 +61,22 @@ html, body { overflow: hidden; width: 100%; height: 100%; }
 .properties-cont table tr td input { border: 1px solid #303030; background-color: #3a3a3a; color: #f5f5f5; display: block; font-size: 11px; font-family: Tahoma; }
 
 .properties-obj { top: 100px; left: 0px; }
-.properties-status { top: 300px; left: 0px; }
-.properties-console { top: 500px; left: 0px; }
+.properties-status { top: 100px; left: 0px; }
+.properties-console { top: 400px; left: 0px; }
 
-#editing-modes { padding: 0 0 0 10px; }
+#editing-modes { padding: 0 0 0 10px; float: left; }
 #editing-modes a.active { color: red; }
+
+#simulation-control { padding: 0 0 0 30px; float: left; }
+.simulation-box { float: left; padding: 0 15px; border: 1px solid gray; border-width: 0 1px 0 1px; }
+.simulation-box label.radio-label { color: #7fa8d2; font-weight: bold; padding: 0 10px 0 0; }
+.simulation-box input[type=text] { border: 1px solid #303030; background-color: #3a3a3a; color: #f5f5f5; font-size: 11px; font-family: Tahoma; width: 50px; }
+.simulation-box input[type=radio] { background-color: #535353; }
+
+.button-simulation-startstop { width: 11px; height: 11px; display: block; background: url('../images/button-simulation-startstop.png') no-repeat left top; }
+.button-simulation-startstop.stopped { background-position: left bottom; }
+
+#non-stable-state b { color: #d22; }
 
 
 /** 

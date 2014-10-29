@@ -16,7 +16,7 @@
 //     + [BUG? :)] nie mozna kluczowac zegara, dorobic do rejestrow pin enableClock
 //
 // TODO kiedys:
-//     - pozycje obiektow x y i wymiary modulow
+//     + pozycje obiektow x y i wymiary modulow
 //     - lista punktow polaczenia ktore sa po drodze
 
 
@@ -37,7 +37,6 @@ function test()
         b = helperGetRandomInt(0, 16777215);
         inBits = helperToBin(a, 24) + helperToBin(b, 24) + "0";
 
-        t.resetPropagateState();
         t.setInputData(inBits, 0);
         outBits = t.getOutputData();
         t.clockFallingEdge();
@@ -82,7 +81,6 @@ function testFullAdder()
             inBits = i.toString(2);
             inBits = helperGenerateBits(3-inBits.length, "0") + inBits;
 
-            t.resetPropagateState();
             t.setInputData(inBits, 0);
             outBits = t.getOutputData();
             t.clockFallingEdge();
