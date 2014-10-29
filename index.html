@@ -29,11 +29,11 @@
                 <a href="javascript:void(0)" onClick="cpuSimEditor.benchmark();" style="color: #7fa8d2; font-size: 24px; line-height: 24px; display: block; padding: 10px 0 13px 10px; font-weight: bold;">LogicSim</a>
 
                 <div id="editing-modes">
-                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="0">Interact</a>
-                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="1">Select</a>
-                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="2">Move</a>
-                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="3">NAND</a>
-                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="4">Wire</a>
+                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="1">Interact</a>
+                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="2">Select</a>
+                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="3">Move</a>
+                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="4">NAND</a>
+                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="5">Wire</a>
                     <!--       
                     <a href="javascript:void(0)">AND</a>
                     <a href="javascript:void(0)">OR</a>
@@ -93,6 +93,15 @@
                 </div>
             </div>
             <!-- status END -->
+            
+            <!-- console -->
+            <div class="properties-cont properties-console">
+                <div class="h">Status</div>
+                <div class="p" style="width: 200px; height: 120px;" id="console">
+                    
+                </div>
+            </div>
+            <!-- console END -->
 
             <!-- sim window -->
             <div id="sim-window-div"></div>

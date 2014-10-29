@@ -125,14 +125,6 @@ white (true) {
 
 
 
---------------------------------------------------------------------------------
-
-Interface:
-- pasek gorny:      zalogowany user, twoje zapisane projekty, 
-- pasek narzedzi:   lapka poruszania sie, interakcja ze switchami, zaznaczanie, bramki: AND/OR/NOT/XOR/NAND/NOR/XNOR, inputy: SWITCH,HIGH,LOW, outputy: LED/7SEG/16SEG/
-- pasek widoku:     poziomy wyswietlania obiektow, poziomy wyswietlania sciezek
-
-mozliwosci: autozapis projektu, zrzut projektu, wstawianie zapisanych modulow (wybor z listy i przeladowanie strony by zaladowac JS'a)
 
 
 

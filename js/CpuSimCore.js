@@ -134,6 +134,11 @@ function helperToBin(n, width)
     return bits;
 }
 
+function helperConsole(txt)
+{
+    $('#console').append('<div>'+txt+'</div>');
+}
+
 function helperFromBin(bits)
 {
     bits = bits + "";
@@ -203,6 +208,96 @@ function helperGenerateBitsRand(len)
     return ret;
 }
 
+function helperSetupBitsNESWLocations(__c) 
+{
+    var i, j;
+    var arrNESWLoc;
+    var arrBitLoc;
+    var s, hs;
+    var pin = new Vector2d();
+    var a = new Vector2d();
+    var b = new Vector2d();
+    var c = new Vector2d();
+
+    s = __c.getSize();
+    hs = s.mul(0.5);
+
+    for (j=0; j<2; j++) {
+
+        // choose input/output
+        switch (j) {
+            case 0: arrNESWLoc = __c.getInputBitsNESWLocations();
+                    arrBitLoc = __c.getInputBitsLocations();
+                    break;
+            case 1: arrNESWLoc = __c.getOutputBitsNESWLocations();
+                    arrBitLoc = __c.getOutputBitsLocations();
+                    break;
+        }
+
+        for (i=0; i<arrBitLoc.length; i++) {
+            pin.setX( arrBitLoc[i].getX() + PIN_SIZE*0.5 );
+            pin.setY( arrBitLoc[i].getY() + PIN_SIZE*0.5 );
+
+            // N
+            a.setX(0.0);       a.setY(0.0);
+            b.setX(s.getX());  b.setY(0.0);
+            c.setX(hs.getX()); c.setY(hs.getY());
+            if (pin.isInTriangle(a, b, c)) {
+                arrNESWLoc.push(0);
+                continue;
+            }
+
+            // E
+            a.setX(s.getX());  a.setY(0.0);
+            b.setX(s.getX());  b.setY(s.getY());
+            c.setX(hs.getX()); c.setY(hs.getY());
+            if (pin.isInTriangle(a, b, c)) {
+                arrNESWLoc.push(1);
+                continue;
+            }
+
+            // S
+            a.setX(0.0);       a.setY(s.getY());
+            b.setX(s.getX());  b.setY(s.getY());
+            c.setX(hs.getX()); c.setY(hs.getY());
+            if (pin.isInTriangle(a, b, c)) {
+                arrNESWLoc.push(2);
+                continue;
+            }
+
+            // W
+            a.setX(0.0);       a.setY(0.0);
+            b.setX(0.0);       b.setY(s.getY());
+            c.setX(hs.getX()); c.setY(hs.getY());
+            if (pin.isInTriangle(a, b, c)) {
+                arrNESWLoc.push(3);
+                continue;
+            }
+
+            // default is N
+            arrNESWLoc.push(0);
+        }
+    }
+}
+function helperSetupBitsTmpCoordinates(__c) 
+{
+    var i;
+    var arrBitsTmpCoord;
+
+    // generate place (create Vec objects) for input bits tmp coordinates
+    arrBitsTmpCoord = __c.getInputBitsTmpCoordinates();
+    for (i=0; i<__c.getInputBitsCount(); i++) {
+        arrBitsTmpCoord.push(new Vector2d());      // pin loc
+        arrBitsTmpCoord.push(new Vector2d());      // pin NESW loc
+    }
+
+    // generate place (create Vec objects) for output bits tmp coordinates
+    arrBitsTmpCoord = __c.getOutputBitsTmpCoordinates();
+    for (i=0; i<__c.getOutputBitsCount(); i++) {
+        arrBitsTmpCoord.push(new Vector2d());      // pin loc
+        arrBitsTmpCoord.push(new Vector2d());      // pin NESW loc
+    }
+}
 
 
 /**
@@ -231,7 +326,7 @@ function CombinationalBase()
     }
     this.setInputData = function(__c, bits, bitStart) {
         if ((bits.length+bitStart)>__c.getInputBitsCount())
-            console.log('[ERROR] setInputData too long in '+__c.getObjClass());
+            helperConsole('[ERROR] setInputData too long in '+__c.getObjClass());
         var i;
         for (i=0; i<bits.length; i++) {
             atInputData = atInputData.replaceAt(bitStart+i, bits[i]);
@@ -246,7 +341,7 @@ function CombinationalBase()
                 if (nonStableCount>SIM_NON_STABLE_MAX) {
                     atOutputData = -1;
                     SIM_FLAG_NON_STABLE = true;
-                    console.log('[ERROR] non stable in '+__c.getObjClass());
+                    helperConsole('[ERROR] non stable in '+__c.getObjClass());
                 }
             }
             previousInputData = atInputData;
@@ -255,103 +350,18 @@ function CombinationalBase()
             floatingWireCount++;
             if (floatingWireCount>SIM_FLOATING_WIRE_MAX) {
                 SIM_FLAG_FLOATING_WIRE = true;
-                console.log('[ERROR] floating wire in '+__c.getObjClass());
+                helperConsole('[ERROR] floating wire in '+__c.getObjClass());
             }
             atOutputData = null;
         }
         return atOutputData;
     }
+    this.getOutputDataReadyOnly = function() {
+        return atOutputData;
+    }
     this.debug = function(__c, depth) {
         var indent = helperGenerateBits(depth, DEBUG_INDENT);
         return indent+'['+__c.getObjClass()+'] in: '+atInputData+', out: '+atOutputData+', nonStableCount: '+nonStableCount+', floatingWireCount: '+floatingWireCount+', isReadyToPropagate: '+(__c.isReadyToPropagate() ? 'yes' : 'no');
-    }
-    this.setupBitsNESWLocations = function(__c) {
-        var i, j;
-        var arrNESWLoc;
-        var arrBitLoc;
-        var s, hs;
-        var pin = new Vector2d();
-        var a = new Vector2d();
-        var b = new Vector2d();
-        var c = new Vector2d();
-
-        s = __c.getSize();
-        hs = s.mul(0.5);
-
-        for (j=0; j<2; j++) {
-            
-            // choose input/output
-            switch (j) {
-                case 0: arrNESWLoc = __c.getInputBitsNESWLocations();
-                        arrBitLoc = __c.getInputBitsLocations();
-                        break;
-                case 1: arrNESWLoc = __c.getOutputBitsNESWLocations();
-                        arrBitLoc = __c.getOutputBitsLocations();
-                        break;
-            }
-            
-            for (i=0; i<arrBitLoc.length; i++) {
-                pin.setX( arrBitLoc[i].getX() + PIN_SIZE*0.5 );
-                pin.setY( arrBitLoc[i].getY() + PIN_SIZE*0.5 );
-
-                // N
-                a.setX(0.0);       a.setY(0.0);
-                b.setX(s.getX());  b.setY(0.0);
-                c.setX(hs.getX()); c.setY(hs.getY());
-                if (pin.isInTriangle(a, b, c)) {
-                    arrNESWLoc.push(0);
-                    continue;
-                }
-
-                // E
-                a.setX(s.getX());  a.setY(0.0);
-                b.setX(s.getX());  b.setY(s.getY());
-                c.setX(hs.getX()); c.setY(hs.getY());
-                if (pin.isInTriangle(a, b, c)) {
-                    arrNESWLoc.push(1);
-                    continue;
-                }
-
-                // S
-                a.setX(0.0);       a.setY(s.getY());
-                b.setX(s.getX());  b.setY(s.getY());
-                c.setX(hs.getX()); c.setY(hs.getY());
-                if (pin.isInTriangle(a, b, c)) {
-                    arrNESWLoc.push(2);
-                    continue;
-                }
-
-                // W
-                a.setX(0.0);       a.setY(0.0);
-                b.setX(0.0);       b.setY(s.getY());
-                c.setX(hs.getX()); c.setY(hs.getY());
-                if (pin.isInTriangle(a, b, c)) {
-                    arrNESWLoc.push(3);
-                    continue;
-                }
-                
-                // default is N
-                arrNESWLoc.push(0);
-            }
-        }
-    }
-    this.setupBitsTmpCoordinates = function(__c) {
-        var i;
-        var arrBitsTmpCoord;
-        
-        // generate place (create Vec objects) for input bits tmp coordinates
-        arrBitsTmpCoord = __c.getInputBitsTmpCoordinates();
-        for (i=0; i<__c.getInputBitsCount(); i++) {
-            arrBitsTmpCoord.push(new Vector2d());      // pin loc
-            arrBitsTmpCoord.push(new Vector2d());      // pin NESW loc
-        }
-        
-        // generate place (create Vec objects) for output bits tmp coordinates
-        arrBitsTmpCoord = __c.getOutputBitsTmpCoordinates();
-        for (i=0; i<__c.getOutputBitsCount(); i++) {
-            arrBitsTmpCoord.push(new Vector2d());      // pin loc
-            arrBitsTmpCoord.push(new Vector2d());      // pin NESW loc
-        }
     }
 }
 
@@ -381,25 +391,28 @@ function GateNand()
     this.getInputBitsNESWLocations = function() { return inputBitsNESWLocations; }
     this.getOutputBitsNESWLocations = function() { return outputBitsNESWLocations; }
     this.isReadyToPropagate = function() {
+        return true;
+        /*                                                                      TODO: check this                !!!!!!!!!!!!!!!!!!!
         var atInputData = __b.getAtInputData();
         if (atInputData.length==0)
             return false;
         if (atInputData[0]!="?" || atInputData[1]!="?")
             return true;
             return false;
+        */
     }
     this.__getOutputData = function() {
         var atInputData = __b.getAtInputData();
         var atOutputData = "";
         
         switch (atInputData) {
-            case "??": atOutputData = "?"; break;
+            case "??": atOutputData = "1"; break;   //       TODO: check this                !!!!!!!!!!!!!!!!!!!
             case "?0": atOutputData = "1"; break;
-            case "?1": atOutputData = helperGetRandomInt(0, 1).toString(); break;
+            case "?1": atOutputData = "1";/*helperGetRandomInt(0, 1).toString();*/ break;
             case "0?": atOutputData = "1"; break;
             case "00": atOutputData = "1"; break;
             case "01": atOutputData = "1"; break;
-            case "1?": atOutputData = helperGetRandomInt(0, 1).toString(); break;
+            case "1?": atOutputData = "1";/*helperGetRandomInt(0, 1).toString();*/ break;
             case "10": atOutputData = "1"; break;
             case "11": atOutputData = "0"; break;
         }
@@ -413,10 +426,11 @@ function GateNand()
     this.resetPropagateState = function() { __b.resetPropagateState(this); }
     this.setInputData = function(bits, bitStart) { __b.setInputData(this, bits, bitStart); }
     this.getOutputData = function() { return __b.getOutputData(this); }
+    this.getOutputDataReadyOnly = function() { return __b.getOutputDataReadyOnly(this); }
     this.clockFallingEdge = function() { }
     this.debug = function(depth) { return __b.debug(this, depth); }
-    this.setupBitsNESWLocations = function() { __b.setupBitsNESWLocations(this); }
-    this.setupBitsTmpCoordinates = function() { __b.setupBitsTmpCoordinates(this); }
+    this.setupBitsNESWLocations = function() { helperSetupBitsNESWLocations(this); }
+    this.setupBitsTmpCoordinates = function() { helperSetupBitsTmpCoordinates(this); }
     
     this.setupBitsNESWLocations();
     this.setupBitsTmpCoordinates();
@@ -653,7 +667,7 @@ function DFlipFlopBase()
     }
     this.setInputData = function(__c, bits, bitStart) {
         if ((bits.length+bitStart)>__c.getInputBitsCount())
-            console.log('[ERROR] setInputData too long in '+__c.getObjClass());
+            helperConsole('[ERROR] setInputData too long in '+__c.getObjClass());
         var i;
         for (i=0; i<bits.length; i++) {
             atInputData = atInputData.replaceAt(bitStart+i, bits[i]);
@@ -665,7 +679,7 @@ function DFlipFlopBase()
             floatingWireCount++;
             if (floatingWireCount>SIM_FLOATING_WIRE_MAX) {
                 SIM_FLAG_FLOATING_WIRE = true;
-                console.log('[ERROR] floating wire in '+__c.getObjClass());
+                helperConsole('[ERROR] floating wire in '+__c.getObjClass());
             }
         }
         atOutputData = savedData;     // always return saved data
@@ -676,7 +690,7 @@ function DFlipFlopBase()
     this.clockFallingEdge = function(__c) {
         if ( ! this.isReadyToPropagate()) {
             SIM_FLAG_FLOATING_WIRE = true;
-            console.log('[ERROR] clockFallingEdge, floating wire in '+__c.getObjClass());
+            helperConsole('[ERROR] clockFallingEdge, floating wire in '+__c.getObjClass());
         }
         
         if (atInputData[atInputData.length-1]=="1") {   // check RESET bit
@@ -781,12 +795,12 @@ function ModuleObj()
         bitLen = __c.getModuleConnByIndex(connIdx).getObjB_bitLen();
         for (i=bitStart; i<bitStart+bitLen; i++) {
             if (i>=bitsCount)
-                console.log('[ERROR] - addConnIn, trying to connect to many bits in '+__c.getObjClass()+'!');
+                helperConsole('[ERROR] - addConnIn, trying to connect to many bits in '+__c.getObjClass()+'!');
             
             bit = parseInt( connInBitsCount.charAt(i) );
             bit++;
             if (bit>1)
-                console.log('[ERROR] - addConnIn, multiple wire to one input in '+__c.getObjClass()+'!');
+                helperConsole('[ERROR] - addConnIn, multiple wire to one input in '+__c.getObjClass()+'!');
             
             connInBitsCount = connInBitsCount.replaceAt(i, bit+"");
         }
@@ -812,7 +826,7 @@ function ModuleObj()
         bitLen = __c.getModuleConnByIndex(connIdx).getObjA_bitLen();
         for (i=bitStart; i<bitStart+bitLen; i++) {
             if (i>=bitsCount)
-                console.log('[ERROR] - addConnOut, trying to connect to many bits in '+__c.getObjClass()+'!');
+                helperConsole('[ERROR] - addConnOut, trying to connect to many bits in '+__c.getObjClass()+'!');
             
             bit = parseInt( connOutBitsCount.charAt(i) );
             bit++;
@@ -922,7 +936,7 @@ function Module()
         var i, tmpIdx;
         
         if (objA_bitLen!=objB_bitLen)
-            console.log('[ERROR] - addConn, bit len are not equal in '+objClass+'!');
+            helperConsole('[ERROR] - addConn, bit len are not equal in '+objClass+'!');
         
         conn.setObjA_name(objA_name);
         conn.setObjB_name(objB_name);
@@ -937,7 +951,7 @@ function Module()
             if (moduleObjs[i].getName()==objA_name)
                 tmpIdx = i;
         if (tmpIdx===null)
-            console.log('[ERROR] - addConn, objA_name not found in '+objClass+'!');
+            helperConsole('[ERROR] - addConn, objA_name not found in '+objClass+'!');
         conn.setObjA_index(tmpIdx);
         
         // check objB name
@@ -946,7 +960,7 @@ function Module()
             if (moduleObjs[i].getName()==objB_name)
                 tmpIdx = i;
         if (tmpIdx===null)
-            console.log('[ERROR] - addConn, objB_name not found in '+objClass+'!');
+            helperConsole('[ERROR] - addConn, objB_name not found in '+objClass+'!');
         conn.setObjB_index(tmpIdx);
         
         // add connection do array
@@ -961,6 +975,8 @@ function Module()
         // TODO
     }
     this.isReadyToPropagate = function() {
+        return true;
+        /*                                                                      TODO: check this                !!!!!!!!!!!!!!!!!!!
         var i;
         if (atInputData.length==0)
             return false;
@@ -968,6 +984,7 @@ function Module()
             if (atInputData[i]=="?")
                 return false;
         return true;
+        */
     }
     this.setInputBitsCount = function(ib) { inputBitsCount = ib; }
     this.getInputBitsCount = function() { return inputBitsCount; }
@@ -992,7 +1009,7 @@ function Module()
     }
     this.setInputData = function(bits, bitStart) {
         if ((bits.length+bitStart)>inputBitsCount)
-            console.log('[ERROR] setInputData too long in '+objClass);
+            helperConsole('[ERROR] setInputData too long in '+objClass);
         var i;
         for (i=0; i<bits.length; i++) {
             atInputData = atInputData.replaceAt(bitStart+i, bits[i]);
@@ -1006,10 +1023,11 @@ function Module()
         var simError = false;
         var stableSignals;
         
-        // 'propagation loop':
+        // 'propagation loop': 
+        /*
         while (true) {
             stableSignals = true;
-            
+        */    
             // reset state in all objects for each 'propagation loop'
             for (i=0; i<moduleObjs.length; i++) {
                 obj = moduleObjs[i].getObj();
@@ -1018,7 +1036,7 @@ function Module()
             }
             
             for (i=0; i<moduleObjs.length; i++) {
-
+                    
                 if (i==0) {
                     // __input
                     dataBits = atInputData;
@@ -1031,6 +1049,7 @@ function Module()
                         obj = moduleObjs[i].getObj();
                         dataBits = obj.getOutputData();
                     }
+                    
                     
                 if (dataBits===null) {
                     // floating wire
@@ -1051,13 +1070,15 @@ function Module()
                         // normal output
                         
                         // if obj!='__input' & obj is stable (has same input/output) we don't propagate signal to other connected objects
+                        // in other words: propagate signal if obj IS '__input' or IS non-stable 
                         if (i!=0 && moduleObjs[i].getObj().getNonStableCount()==0)
-                            continue;
+                            ;//continue;
                         
-                        // for each connection propagate signal
+                        // if obj IS '__input' keep stableSignal true
                         if (i!=0)
                             stableSignals = false;
                         
+                        // for each connection propagate signal
                         moduleObjs[i].connOutIteratorReset();
                         while ((connIdx=moduleObjs[i].connOutIteratorGetNext())!==null) {
                             subDataBits = dataBits.toString().substr(moduleConns[connIdx].getObjA_bitStart(), moduleConns[connIdx].getObjA_bitLen());
@@ -1073,13 +1094,14 @@ function Module()
                         }
                     }
             }
-            
+        /*  
             if (stableSignals)
                 break;
             
             if (simError)
                 break;
         }
+        */
 
     }
     this.getOutputData = function() {
@@ -1090,7 +1112,7 @@ function Module()
                 if (nonStableCount>SIM_NON_STABLE_MAX) {
                     atOutputData = -1;
                     SIM_FLAG_NON_STABLE = true;
-                    console.log('[ERROR] non stable in '+objClass);
+                    helperConsole('[ERROR] non stable in '+objClass);
                 }
             }
             previousInputData = atInputData;
@@ -1099,7 +1121,7 @@ function Module()
             floatingWireCount++;
             if (floatingWireCount>SIM_FLOATING_WIRE_MAX) {
                 SIM_FLAG_FLOATING_WIRE = true;
-                console.log('[ERROR] floating wire in '+objClass);
+                helperConsole('[ERROR] floating wire in '+objClass);
             }
             atOutputData = null;
         }

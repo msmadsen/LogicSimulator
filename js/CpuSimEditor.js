@@ -2,11 +2,11 @@ var SIM_FPS = 25.0;
 var SIM_FRAME_TIME = 1000.0/SIM_FPS;
 var SIM_RENDER_TIMER_ID;
 
-var EDIT_MODE_INTERACT = 0;
-var EDIT_MODE_SELECT = 1;
-var EDIT_MODE_MOVE = 2;
-var EDIT_MODE_NAND = 3;
-var EDIT_MODE_WIRE = 4;
+var EDIT_MODE_INTERACT = 1;
+var EDIT_MODE_SELECT = 2;
+var EDIT_MODE_MOVE = 3;
+var EDIT_MODE_NAND = 4;
+var EDIT_MODE_WIRE = 5;
 
 
 function CpuSimEditorPinStatus()
@@ -116,18 +116,19 @@ function CpuSimEditor()
     var wireStart = new CpuSimEditorPinStatus();
     var wireStop = new CpuSimEditorPinStatus();
     
-    var inTriangle = false;
-    var a = new Vector2d(-100.0, 50.0);
-    var b = new Vector2d(-30.0, -10.0);
-    var c = new Vector2d(10.0, 30.0);
-    
     this.redrawStart = function() {
         var fps;
         var frameTime;
+        var outBits;
         
         helperExecTimeStart();
         
         cpuSimEditor.render();
+        
+        m.resetPropagateState();
+        //m.setInputData("", 0);
+        outBits = m.getOutputData();
+        m.clockFallingEdge();
                 
         frameTime = parseFloat( helperExecTimeEnd() );
         if (frameTime!=0.0) {
@@ -137,7 +138,7 @@ function CpuSimEditor()
             $('#status-render-time').html('many :)');
         }
         
-        SIM_RENDER_TIMER_ID = setTimeout("cpuSimEditor.redrawStart()", 10);
+        SIM_RENDER_TIMER_ID = setTimeout("cpuSimEditor.redrawStart()", SIM_FRAME_TIME);
     }
     
     this.newProject = function() {
@@ -293,72 +294,53 @@ function CpuSimEditor()
         var bitsTmpCoord_A;
         var bitsTmpCoord_B;
         var moduleObj_B;
-        var pinArr;
-        var i;
         var connIdx;
         var connObj;
         var obj_A;
         var obj_B;
-        
-        
-
-        /*
-        // draw input pins
-        ctx.strokeStyle = "green";
-        pinArr = obj.getInputBitsLocations();
-        bitsTmpCoord = obj.getInputBitsTmpCoordinates();
-        for (i=0; i<pinArr.length; i++) {
-            pinXY = bitsTmpCoord[i*2];
-            pinCtrlXY = bitsTmpCoord[i*2 + 1];
-            
-            ctx.beginPath();
-            ctx.moveTo(pinXY.getX(), pinXY.getY());
-            ctx.lineTo(pinCtrlXY.getX(), pinCtrlXY.getY());
-            ctx.stroke();
-        }
-
-
-        // draw output pins
-        ctx.strokeStyle = "yellow";
-        pinArr = obj.getOutputBitsLocations();
-        bitsTmpCoord = obj.getOutputBitsTmpCoordinates();
-        for (i=0; i<pinArr.length; i++) {
-            pinXY = bitsTmpCoord[i*2];
-            pinCtrlXY = bitsTmpCoord[i*2 + 1];
-            
-            ctx.beginPath();
-            ctx.moveTo(pinXY.getX(), pinXY.getY());
-            ctx.lineTo(pinCtrlXY.getX(), pinCtrlXY.getY());
-            ctx.stroke();
-        }
-        
-
-        ctx.lineWidth = 6;
-        ctx.strokeStyle = "black";
-        ctx.beginPath();
-        ctx.moveTo(300, 350);
-        ctx.bezierCurveTo(323, 212, 368, 562, 526, 423);
-        ctx.stroke();
-        */
+        var bitState;
        
         obj_A = moduleObj_A.getObj();
         
         moduleObj_A.connOutIteratorReset();
         while ((connIdx=moduleObj_A.connOutIteratorGetNext())!==null) {
             connObj = m.getModuleConnByIndex(connIdx);
+            
+            // display only 'one cable' connections
+            if (connObj.getObjA_bitLen()>1 || connObj.getObjB_bitLen()>1)
+                continue;
+            
             moduleObj_B = m.getModuleObjByIndex(connObj.getObjB_index());
             obj_B = moduleObj_B.getObj();
             
-            ctx.lineWidth = 6;
+            bitsTmpCoord_A = obj_A.getOutputBitsTmpCoordinates();
+            bitsTmpCoord_B = obj_B.getInputBitsTmpCoordinates();
+            
+            pinXY_A = bitsTmpCoord_A[ connObj.getObjA_bitStart()*2 ];
+            pinCtrlXY_A = bitsTmpCoord_A[ connObj.getObjA_bitStart()*2 + 1 ];
+            pinXY_B = bitsTmpCoord_B[ connObj.getObjB_bitStart()*2 ];
+            pinCtrlXY_B = bitsTmpCoord_B[ connObj.getObjB_bitStart()*2 + 1 ];
+            
+            bitState = obj_A.getOutputDataReadyOnly().toString().substr(connObj.getObjA_bitStart(), connObj.getObjA_bitLen());
+            
+            ctx.lineWidth = 3;
             ctx.strokeStyle = "black";
             ctx.beginPath();
-            ctx.moveTo(300, 350);
-            ctx.bezierCurveTo(323, 212, 368, 562, 526, 423);
-            ctx.stroke();aw
-
+            ctx.moveTo(pinXY_A.getX(), pinXY_A.getY());
+            ctx.bezierCurveTo(pinCtrlXY_A.getX(), pinCtrlXY_A.getY(), pinCtrlXY_B.getX(), pinCtrlXY_B.getY(), pinXY_B.getX(), pinXY_B.getY());
+            ctx.stroke();
+            
+            ctx.lineWidth = 2;
+            if (bitState=="0")
+                ctx.strokeStyle = "white"; else
+                ctx.strokeStyle = "red";
+            ctx.beginPath();
+            ctx.moveTo(pinXY_A.getX(), pinXY_A.getY());
+            ctx.bezierCurveTo(pinCtrlXY_A.getX(), pinCtrlXY_A.getY(), pinCtrlXY_B.getX(), pinCtrlXY_B.getY(), pinXY_B.getX(), pinXY_B.getY());
+            ctx.stroke();
 
             /*
-            subDataBits = dataBits.toString().substr(connObj.getObjA_bitStart(), connObj.getObjA_bitLen());
+            
             if (connObj.getObjB_index()!=1) {
                 moduleObjs[connObj.getObjB_index()].getObj().setInputData(subDataBits, connObj.getObjB_bitStart());
             } else {
@@ -394,26 +376,6 @@ function CpuSimEditor()
             moduleObj = objs[i];
             this.__renderInCanvasConnections(moduleObj, i, ctx);
         }
-        
-        // render
-        var p;
-        ctx.lineWidth = 1;
-        if (!inTriangle) {
-            ctx.strokeStyle = "red";
-        } else {
-            ctx.strokeStyle = "green";
-        }
-        
-        ctx.beginPath();
-        p = cpuSimEditorCoordinates.toCanvas(a);
-        ctx.moveTo(p.getX(), p.getY());
-        p = cpuSimEditorCoordinates.toCanvas(b);
-        ctx.lineTo(p.getX(), p.getY());
-        p = cpuSimEditorCoordinates.toCanvas(c);
-        ctx.lineTo(p.getX(), p.getY());
-        p = cpuSimEditorCoordinates.toCanvas(a);
-        ctx.lineTo(p.getX(), p.getY());
-        ctx.stroke();
     }
     
     this.__renderGrid = function(ctx) {
@@ -553,6 +515,21 @@ function CpuSimEditor()
         }
     }
     
+    this.interactObject = function(internalPixel) {
+        var objs = m.getModuleObjs();
+        var moduleObj;
+        var i;
+        var clickStatus = new CpuSimEditorClickStatus();
+        
+        for (i=2; i<objs.length; i++) {
+            moduleObj = objs[i];
+            this.clickCheck(moduleObj, internalPixel, clickStatus);
+            if (clickStatus.getClicked()) {
+                console.log( moduleObj.debug(0) );
+            }
+        }
+    }
+    
     this.wireObjects = function(internalPixel) {
         var objs = m.getModuleObjs();
         var moduleObj;
@@ -662,7 +639,7 @@ function CpuSimEditor()
     
     this.mouseLeftClick = function(internalPixel) {
         switch (editMode) {
-            case EDIT_MODE_INTERACT: 
+            case EDIT_MODE_INTERACT: this.interactObject(internalPixel);
                                      break;
             case EDIT_MODE_SELECT:   this.selectObjects(internalPixel);
                                      break;
@@ -677,9 +654,6 @@ function CpuSimEditor()
     }
     
     this.mouseMove = function(internalPixel) {
-        
-        inTriangle = internalPixel.isInTriangle(a, b, c);
-        
     }
     
     this.zoomChanged = function() {

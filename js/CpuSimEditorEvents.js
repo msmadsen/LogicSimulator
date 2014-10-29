@@ -153,7 +153,22 @@ function setupCpuSimWindowMouseEvents()
     });
 }
 
-
+function setupCpuSimWindowKeyboardEvents()
+{
+    $(document).keyup(function (e) {
+        var code = (e.keyCode ? e.keyCode : e.which);
+        var num;
+        var jObj;
+        
+        if (code>=48 && code<=57) {
+            num = code - 48;
+            
+            jObj = $('#editing-modes > a[editMode='+num+']');
+            if (jObj.size()==1)
+                cpuSimEditor.editingModeChange(jObj);
+        }
+    });
+}
 
 
 $(window).load(function () {
@@ -172,4 +187,7 @@ $(window).load(function () {
     $('#status-view-zoom').html( helperNumberFormat(cpuSimEditorCoordinates.getZoom(), 2, '.', ' ') );
     
     cpuSimEditor.redrawStart();
+    
+    
+    setupCpuSimWindowKeyboardEvents();
 });
