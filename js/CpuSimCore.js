@@ -38,8 +38,11 @@ function Vector2d(_x, _y)
     this.sub = function(b) { return new Vector2d((x-b.getX()), (y-b.getY())); };
     this.mul = function(b) { return new Vector2d((x*parseFloat(b)), (y*parseFloat(b))); };
     this.div = function(b) { return new Vector2d((x/parseFloat(b)), (y/parseFloat(b))); };
+    this.addScalar = function(b) { return new Vector2d(x+parseFloat(b), y+parseFloat(b)); };
+    this.subScalar = function(b) { return new Vector2d(x-parseFloat(b), y-parseFloat(b)); };
     this.len = function() { return Math.sqrt(x*x + y*y); };
     this.dot = function(b) { return x*b.getX() + y*b.getY(); }
+    this.clone = function() { return new Vector2d(x, y); }
     
     this.norm = function() {
         var len = this.len();
@@ -365,15 +368,15 @@ function helperSetupBitsTmpCoordinates(__c)
 
 function CombinationalBase()
 {
-    var savedData = null;       // not used
+    var inputWaiting;
+    var input;
+    var output;
+    var outputPrevoius;
+    var changed;
+    // --------
+    var savedData = null;       // for memory?
     var state = 0;
-    var atInputData = "";
-    var atOutputData = "";
-    var newDataAtInput = true;
-    var newDataAtOutput = true;
     var switchDelay = 0;
-    var previousInputData = "";
-    var previousOutputData = "";
     var objSpec = null;
     var objClass = "";
     var objClassCode = -1;
@@ -399,21 +402,11 @@ function CombinationalBase()
             case OBJ_WIRELINK: objSpec = new WireLink(this);  break;
         }
         
-        objSpec.configureAs();
+        objSpec.configure();
         objClassCode = type;
-        this.setupAtInputOutputData();
+        this.reset();
         helperSetupBitsNESWLocations(this);
         helperSetupBitsTmpCoordinates(this);
-    }
-    this.__getOutputData = function() {
-        var tmp = "";
-        switch (objClassCode) {
-            case OBJ_GATENAND: tmp = objSpec.getOutputData(); break;
-            case OBJ_INPUT:    tmp = objSpec.getOutputData(); break;
-            case OBJ_OUTPUT:   tmp = objSpec.getOutputData(); break;
-            case OBJ_WIRELINK: tmp = objSpec.getOutputData(); break;
-        }
-        return tmp;
     }
     this.toggle = function () {
         switch (objClassCode) {
@@ -440,9 +433,6 @@ function CombinationalBase()
     this.getOutputBitsNESWLocations = function() { return outputBitsNESWLocations; }
     this.setState = function(s) { state = s; }
     this.getState = function() { return state; }
-    this.getNewDataAtInput = function() { return newDataAtInput; }
-    this.getNewDataAtOutput = function() { return newDataAtOutput; }
-    this.getAtInputData = function() { return atInputData; }
     this.getInputBitsCount = function() { return inputBitsCount; }
     this.setInputBitsCount = function(ibc) { inputBitsCount = ibc; }
     this.getOutputBitsCount = function() { return outputBitsCount }
@@ -451,55 +441,68 @@ function CombinationalBase()
     this.setObjClass = function(oc) { objClass = oc; }
     this.getObjClassCode = function() { return objClassCode; }
     this.clockFallingEdge = function() { }
-    this.setupAtInputOutputData = function() {
-        atInputData = helperGenerateBits(inputBitsCount, "?");
-        atOutputData = this.__getOutputData();         // only compute output
+    this.debug = function(depth) {
+        var indent = helperGenerateBits(depth, DEBUG_INDENT);
+        return indent+'['+this.getObjClass()+'] inputWaiting: '+inputWaiting+', input: '+input+', output: '+output+', state: '+state+', switchDelay: '+switchDelay+', changed: '+(changed ? 'yes' : 'no');
     }
-    this.setInputData = function(bits, bitStart) {
-        var newAtInputData = atInputData;
+    
+    // -- new --
+    this.getSwitchDelay = function() { return switchDelay; }
+    this._computeOutput = function() {
+        var tmp = "";
+        switch (objClassCode) {
+            case OBJ_GATENAND: tmp = objSpec.computeOutput(); break;
+            case OBJ_INPUT:    tmp = objSpec.computeOutput(); break;
+            case OBJ_OUTPUT:   tmp = objSpec.computeOutput(); break;
+            case OBJ_WIRELINK: tmp = objSpec.computeOutput(); break;
+        }
+        output = tmp;
+    }
+    this.setInput = function(bits, bitStart) {
+        var now = (new Date()).getTime();
+        var newInputWaiting = inputWaiting;
         if ((bits.length+bitStart)>this.getInputBitsCount())
             helperConsole('[ERROR] setInputData too long in '+this.getObjClass());
         var i;
         for (i=0; i<bits.length; i++) {
-            newAtInputData = newAtInputData.replaceAt(bitStart+i, bits[i]);
+            newInputWaiting = newInputWaiting.replaceAt(bitStart+i, bits[i]);
         }
         
-        if (atInputData!=previousInputData)
-            newDataAtInput = true; else
-            newDataAtInput = false;
-        
-        if (newAtInputData!=atInputData) {
-            switchDelay = SIM_SWITCH_DELAY;   // TODO: check it - set switch delay only if input are not equal !!
+        if (newInputWaiting!=inputWaiting) {
+            // new signal
+            inputWaiting = newInputWaiting;
+            switchDelay = SIM_SWITCH_DELAY;
+        } else {
+            // same as previous
         }
-        
-        atInputData = newAtInputData;
     }
-    this.getOutputData = function() {
-        if (switchDelay>0) {
+    this.timeLapse = function() {
+        var now = (new Date()).getTime();
+        
+        if (switchDelay>0)
             switchDelay--;
-            return previousOutputData;
-        }
-        atOutputData = this.__getOutputData();
-        if (atOutputData!=previousOutputData)
-            newDataAtOutput = true; else
-            newDataAtOutput = false;
         
-        previousInputData = atInputData;
-        previousOutputData = atOutputData;
-        return atOutputData;
+        if (switchDelay==0) {
+            input = inputWaiting;
+            this._computeOutput();
+
+            if (output!=outputPrevoius)         // !!! this if speeds up simulation 100x times !!!
+                changed = true;
+            outputPrevoius = output;
+        }
     }
-    this.getOutputDataReadyOnly = function() { return atOutputData; }
-    this.getSwitchDelay = function() { return switchDelay; }
+    this.getOutput = function() { return output; }
+    this.getInput = function() { return input; }
+    this.getInputWaiting = function() { return inputWaiting; }
+    this.hasChanged = function() { return changed; }
+    this.clearChanged = function() { changed = false; }
     this.reset = function() {
-        previousInputData = "";
-        previousOutputData = "";
+        inputWaiting = helperGenerateBits(inputBitsCount, "?");
+        input = inputWaiting;
+        outputPrevoius = null;
         switchDelay = 0;
-        newDataAtInput = true;
-        newDataAtOutput = true;
-    }
-    this.debug = function(depth) {
-        var indent = helperGenerateBits(depth, DEBUG_INDENT);
-        return indent+'['+this.getObjClass()+'] in: '+atInputData+', out: '+atOutputData+', switchDelay: '+switchDelay+', newDataAtOutput: '+newDataAtOutput+', out!=prev: '+(atOutputData!=previousOutputData ? 'yes' : 'no');
+        this._computeOutput();
+        changed = true;
     }
 }
 
@@ -508,7 +511,7 @@ function GateNand(__p)
 {
     var p = __p;
     
-    this.configureAs = function() {
+    this.configure = function() {
         p.setObjClass("GateNand");
         p.setSize(new Vector2d(64.0, 64.0)); 
         p.setInputBitsCount(2);
@@ -517,9 +520,9 @@ function GateNand(__p)
         p.setOutputBitsCount(1);
         p.getOutputBitsLocations().push( new Vector2d(56, 28) );
     }
-    this.getOutputData = function() {
+    this.computeOutput = function() {
         var tmp;
-        switch (p.getAtInputData()) {
+        switch (p.getInput()) {
             case "??": tmp = "1"; break;
             case "?0": tmp = "1"; break;
             case "?1": tmp = "1"; break;
@@ -539,14 +542,14 @@ function Input(__p)
 {
     var p = __p;
     
-    this.configureAs = function() {
+    this.configure = function() {
         p.setObjClass("Input");
-        p.setSize(new Vector2d(128.0, 32.0)); 
+        p.setSize(new Vector2d(32.0, 32.0)); 
         p.setInputBitsCount(0);
         p.setOutputBitsCount(1);
         p.getOutputBitsLocations().push( new Vector2d(24, 12) );
     }
-    this.getOutputData = function() {
+    this.computeOutput = function() {
         return (p.getState()==1) ? "1" : "0";
     }
     this.toogle = function() {
@@ -570,15 +573,15 @@ function Output(__p)
 {
     var p = __p;
     
-    this.configureAs = function() {
+    this.configure = function() {
         p.setObjClass("Output");
         p.setSize(new Vector2d(32.0, 32.0)); 
         p.setInputBitsCount(1);
         p.getInputBitsLocations().push( new Vector2d(0, 12) );
         p.setOutputBitsCount(0);
     }
-    this.getOutputData = function() {
-        if (p.getAtInputData()=="1")
+    this.computeOutput = function() {
+        if (p.getInput()=="1")
             p.setState(1); else 
             p.setState(0);
         return "";
@@ -590,7 +593,7 @@ function WireLink(__p)
 {
     var p = __p;
     
-    this.configureAs = function() {
+    this.configure = function() {
         p.setObjClass("WireLink");
         p.setSize(new Vector2d(16.0, 16.0)); 
         p.setInputBitsCount(1);
@@ -598,8 +601,8 @@ function WireLink(__p)
         p.setOutputBitsCount(1);
         p.getOutputBitsLocations().push( new Vector2d(8, 4) );
     }
-    this.getOutputData = function() {
-        return p.getAtInputData();
+    this.computeOutput = function() {
+        return p.getInput();
     }
 }
 
@@ -632,11 +635,41 @@ function ModuleObj()
             case "WireLink" : obj.configureAs(OBJ_WIRELINK); break;
         }
     }
-    this.rotate90 = function(side) {        
+    this.rotate = function(rot) {
+        switch (rotation) {
+            case 0: switch (rot) {
+                        case 0: break;
+                        case 1: this.rotate90('right'); break;
+                        case 2: this.rotate90('right'); this.rotate90('right'); break;
+                        case 3: this.rotate90('left'); break;
+                    } break;
+            case 1: switch (rot) {
+                        case 0: this.rotate90('left'); break;
+                        case 1: break;
+                        case 2: this.rotate90('right'); break;
+                        case 3: this.rotate90('right'); this.rotate90('right'); break;
+                    } break;
+            case 2: switch (rot) {
+                        case 0: this.rotate90('left'); this.rotate90('left'); break;
+                        case 1: this.rotate90('left'); break;
+                        case 2: break;
+                        case 3: this.rotate90('right'); break;
+                    } break;
+            case 3: switch (rot) {
+                        case 0: this.rotate90('right'); break;
+                        case 1: this.rotate90('right'); this.rotate90('right'); break;
+                        case 2: this.rotate90('left'); break;
+                        case 3: break;
+                    } break;
+        }
+    }
+    this.rotate90 = function(side) {
         var iLoc, iLocC;
         var oLoc, oLocC;
         var sizeCenter = new Vector2d(obj.getSize().getX()/2.0, obj.getSize().getY()/2.0);
         var posObjCenter = pos.add(sizeCenter);
+        var newPos = new Vector2d();
+        var coordinateOffset = new Vector2d();
         var i;
         
         if (side!='left' && side!='right')
@@ -647,6 +680,20 @@ function ModuleObj()
         oLoc = obj.getOutputBitsLocations();
         oLocC = obj.getOutputBitsCount();
         
+        // rotate obj position in module but keep pin's rendering location
+        obj.getSize().swapAxes();
+        newPos.setX( posObjCenter.getX() - sizeCenter.getY() );
+        newPos.setY( posObjCenter.getY() - sizeCenter.getX() );
+        coordinateOffset = pos.sub(newPos);
+        pos = newPos.clone();
+        for (i=0; i<iLocC; i++)
+            iLoc[i] = iLoc[i].add(coordinateOffset);     // add correction
+        for (i=0; i<oLocC; i++)
+            oLoc[i] = oLoc[i].add(coordinateOffset);     // add correction
+        
+        // rotate pins
+        sizeCenter = new Vector2d(obj.getSize().getX()/2.0, obj.getSize().getY()/2.0);
+        posObjCenter = pos.add(sizeCenter);
         switch (side) {
             case 'left' : rotation = (rotation==0) ? 3 : (rotation-1);
                           for (i=0; i<iLocC; i++)
@@ -661,14 +708,6 @@ function ModuleObj()
                               oLoc[i] = oLoc[i].rotate90Right(sizeCenter, new Vector2d(PIN_SIZE, PIN_SIZE));
                           break;
         }
-        
-        // rotate obj size
-        //obj.getSize().swapAxes();
-        
-        // rotate obj position in module
-        pos.setX( posObjCenter.getX() - sizeCenter.getY() );
-        pos.setY( posObjCenter.getY() - sizeCenter.getX() );
-        
         
         // rebuild pin directions (for bezier curves)
         helperSetupBitsNESWLocations(obj);
@@ -869,12 +908,13 @@ function Module()
 
             objA = moduleObjs[i].getObj();
             
-//            if (objA.getSwitchDelay()==0 && objA.getNonStableCount()==0)
-//                continue;                        // TODO: check this
-            
-            dataBits = objA.getOutputData();     // TODO: check for if (nonStable)
+            objA.timeLapse();
 
-            if (objA.getNewDataAtOutput()) {    // propagate only if object has new data at output
+            if (objA.hasChanged()) {    // propagate only if object has new data at output
+                dataBits = objA.getOutput();
+                
+                // TODO prevent propagating same as previous output (!!!)
+                
                 // for each connection propagate signal
                 moduleObjs[i].connOutIteratorReset();
                 while ((connIdx=moduleObjs[i].connOutIteratorGetNext())!==null) {
@@ -882,8 +922,10 @@ function Module()
                     objB = moduleObjs[connObj.getObjB_index()].getObj();
                     
                     bitToPropagate = dataBits.toString().charAt(connObj.getObjA_bitStart());
-                    objB.setInputData(bitToPropagate, connObj.getObjB_bitStart());
+                    objB.setInput(bitToPropagate, connObj.getObjB_bitStart());
                 }
+                
+                objA.clearChanged();
             }
 
         }

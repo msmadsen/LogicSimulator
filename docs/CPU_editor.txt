@@ -40,14 +40,15 @@ TODO aktualne:
     + dodanie obiektu input, ktory ma setOne setZero toogle
     + dodanie obiektu ktory ma wejscie i wyjscie (przelotka) - to rozwiaze
       problem zakrecania krzywych beziera
-    
-    // NA PIERWSZY OGIEN   !!!!!!!!!!!      ------------------
+    + rotacja pojedynczego obiektu normalnie obj.rotateLeft() obj.rotateRight()
+    + obj.rotate(0-3) (zrobic jako dwa wywolania left/right)
     + zrobic dziedziczenie    [chyba jednak bez dziedziczenia ale i tak jest lepiej :) ]
     + dodanie obiektu output (lampka)
+    
+    // NA PIERWSZY OGIEN   !!!!!!!!!!!      ------------------
+    - nowy tryb symulacji
     - dodanie obiektu CLOCK
     - dodanie obiektu input HIGHT, LOW
-    - rotacja pojedynczego obiektu normalnie obj.rotateLeft() obj.rotateRight() - cos sie psuje dla prostokatnych obiektow
-    - obj.rotate(0-3) (zrobic jako dwa wywolania left/right)
     - obrazki dla wszystkich typow bramek, rotacji i stanow wewnetrznych
     // NA PIERWSZY OGIEN   !!!!!!!!!!!      ------------------
 

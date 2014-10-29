@@ -387,7 +387,7 @@ function CpuSimEditor()
             pinXY_B = bitsTmpCoord_B[ connObj.getObjB_bitStart()*2 ];
             pinCtrlXY_B = bitsTmpCoord_B[ connObj.getObjB_bitStart()*2 + 1 ];
             
-            bitState = obj_A.getOutputDataReadyOnly().toString().charAt(connObj.getObjA_bitStart());
+            bitState = obj_A.getOutput().toString().charAt(connObj.getObjA_bitStart());
             
             ctx.lineWidth = canvasConnDiameter;
             ctx.strokeStyle = "black";
