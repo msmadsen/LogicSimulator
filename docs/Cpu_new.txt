@@ -1,0 +1,35 @@
+Oo reset w rejestrze rozkazu jest
+zerowy rozkaz, tak samo w rejestrze
+miejsca w rozkazie jest zero (czyli fetch).
+
+[fetch]  [decode]  [execute]  [writeback]
+
+Zerowy rozkaz musi oznaczac zawsze to samo
+czyli wczytaj cos z pamieci flash do ramu
+(jakis blok pamieci). Moze niech to robi
+inny uklad ktory potrafi kopiowac z flasha 
+do ramu i potem oddac sterowanie na CPU
+
+
+
+uri
+check uri in routing table
+if match check credensials if
+
+
+$this->getMailer()
+$this->getPOST()->get()
+$this->getGET()->get()
+$this->isAjax();
+$this->responce404();
+$this->responce500();
+$this->getUser();
+$this->render('')
+
+$this->isReqPost();
+$this->isReqGet();
+$this->generateUrl('routing_name', array(vars));
+$this->redirect()
+$this->redirect( $this->referer() );
+
+$this->setFlash()       session

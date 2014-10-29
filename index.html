@@ -19,17 +19,6 @@
         <link rel="stylesheet" href="css/style.css" />
         <link rel="stylesheet" href="css/OkiWidgets.css" />
 
-        <script>
-            $(document).ready(function() {
-                setTimeout(function() {
-                    cpuSimEditor.quickLoad();
-                    $('#simLoopsPerFrame').val(10);
-                    cpuSimEditor.simParamsUpdate();
-                    cpuSimEditor.simStartStopToogle();
-                }, 1000);
-            });
-        </script>
-        
     </head>
 
     <body>
@@ -111,6 +100,9 @@
             <div class="properties-cont properties-status">
                 <div class="h">Status</div>
                 <div class="p">
+                    
+                    <a href="javascript:void(0)" onClick="cpuSimEditor.rotateObjects('left')">Rotate LEFT</a><br/>
+                    <a href="javascript:void(0)" onClick="cpuSimEditor.rotateObjects('right')">Rotate RIGHT</a><br/><br/>
                     <table cellpadding="0" cellspacing="0" style="width: 180px;">
                         <tr>
                             <th style="width: 90px"><label>Mouse X:</label></th>

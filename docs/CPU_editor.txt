@@ -1,31 +1,108 @@
 Logic Editor:
 
-Zmiany logiki
-    GateNand/Modul - nowe metody:
-        - getSize()
-        - getInputBitsLocations
-        - getOutputBitsLocations
-        
-    ModuleObj - nowe metody:
-        - getPos
-        
-        
-TODO do zmian logiki:
-    - w modulach ktore zrobilem (moduleAnd etc) dodac metody ktore dodalem
-    - w kazdym obiekie bazowym (przerzutnik bramka i module 
-      (ktory udaje przeciez bazowy)) dodac metody do obslugi pozycji pinow
-
       
 TODO aktualne:
+    + na 99% usuniecie floating wire oraz isReadyToPropagate
+    + szybki zapis i odczyt projektu (na razie wersja alpha)
+    + usuniecie __input __output z modulu
+    + usuniecie bitLength z connection lub zastapienie je jednym (przeciez zawsze bitLenA==bitLenB)
     - testy petli symulacji:
-          a) wywalic floating wire
-          b) dac tylko informacje jak siec jest niestabilna bez zatrzymywania symulacji
-    - na 99% usuniecie floating wire oraz isReadyToPropagate
-    - dodanie obiektu input, ktory ma setOne setZero toogle
-    - dodanie obiektu ktory ma wejscie i wyjscie (przelotka) - to rozwiaze
+          a)  [+]  wywalic floating wire
+          b)  [+]  dac tylko informacje jak siec jest niestabilna bez zatrzymywania symulacji
+          c)  [-]  obczaic jak to w koncu symulowac z roznych trybow symulacji
+                    {
+                        [ ### nowy schemat ### ]
+                        INPUT - new      to co przychodzi z zewnatrz i jest 'nowe' a jeszcze nie przepropagowalo
+                        INPUT - aktywny  to co aktyalnie przeliczyla
+                        OUTPUT - aktywny to co wychodzi z bramki
+
+                        setNewInput();    jezeli newInput jest == propagatedInput nie ustawiaj delay else ustaw nowy delay
+                        timeLapse(dt);    mija czas i bramka odejmuje czas propagacji 
+                                          jesli czas <0 ustaw propagatdInput = newInput 
+                                          wylicz nowy stan na output
+                                          changed = true
+                        getOutput();      pobierz aktualny output
+                        hasChanged();     zwraca changed
+                        clearChanged();   == false
+                        reset();          changed na true czas propagacji na taki jak 
+                                          trzeba ustawic wejscia z connectow '<- wstecz' (!!) - BRAMKA MUSI SAMA USLYSZEC SYGNAL KTORY DO NIEJ
+                                          PRZYCHODZI BO SAM ON DO NIEJ NIE PRZYJDZIE po resecie
+
+
+                        -> flaga changed jest kasowana gdy obiekt przepropaguje swoj sygnal dalej w petli symulacji
+                        [ ### nowy schemat END ### ]
+                    }
+          
+    + tak jak na kartce tryby symulacji
+    + logika dla roznych obrazkow i rotacji
+    + klikniecie wstawia obiekt tak ze kursor wskazuje na srodek obiektu
+    + po podlaczeniu kabla reset stabilnych ustawien by bramka mogla przepropagowac cos dalej
+    + dodanie obiektu input, ktory ma setOne setZero toogle
+    + dodanie obiektu ktory ma wejscie i wyjscie (przelotka) - to rozwiaze
       problem zakrecania krzywych beziera
-    - dodanie obiektu output (lampka)
-    - przytworzeniu modulu wszystkie obiekty input/output staja sie pinami in/out
+    
+    // NA PIERWSZY OGIEN   !!!!!!!!!!!      ------------------
+    + zrobic dziedziczenie    [chyba jednak bez dziedziczenia ale i tak jest lepiej :) ]
+    + dodanie obiektu output (lampka)
+    - dodanie obiektu CLOCK
+    - dodanie obiektu input HIGHT, LOW
+    - rotacja pojedynczego obiektu normalnie obj.rotateLeft() obj.rotateRight() - cos sie psuje dla prostokatnych obiektow
+    - obj.rotate(0-3) (zrobic jako dwa wywolania left/right)
+    - obrazki dla wszystkich typow bramek, rotacji i stanow wewnetrznych
+    // NA PIERWSZY OGIEN   !!!!!!!!!!!      ------------------
+
+    - rotacja paru zaznaczonych wzgledem zbiorczego srodka
+    - obiekt RAM (adress, dataIn, dataOut, W/!R) - rozmiar mozna zmieniac z toolboxa jak left/right jak nic nie jest przypiete
+    - interface do pamieci [ getAdressWidth() -> [bitsCount in adress]
+                             getRowWidth() -> [bitsCount in row]       
+                             getDataRow(adres) -> '0x32 0x35 0x54 0x43'     adress -> '0x32x'
+                             saveDataRow(adress, "0x21 0x32 0x54 0x41")
+                           ]
+    - obiekt ROM (adress, dataIn, dataOut) - rozmiar mozna zmieniac z toolboxa jak left/right jak nic nie jest przypiete
+    - obiekt stanu konfiguracji (tryb symulacji, parametry, isRunning itp)
+         obiektow bedzie wiecej :)
+            LogicSim
+                WireTool
+                Editor
+                CoordinateSystem
+                ClickStatus
+                PinStatus
+                Config
+                Render
+                SaveLoad
+            Module
+                ModuleObj
+                ModuleConn
+            CombinationalBase
+                GateNand
+                Input
+                Output
+                WireLink
+                Hight
+                Low
+                Clock
+                SevenSeg
+            Helpers
+            Vector3d
+    
+    - zapis przerobic na konfiguracje modulu podajac ciag znakow z opisem modulu
+      pozwoli to zrezygnowac z tworzenia osobnych klas na kazdy modul tylko bedzie:
+          var m = new Module();
+          m.build("<opis>");
+          opis w stylu:    [O],"nazwa",32,43;[O],"nazwa2",42,43;[C],"nazwa","nazwa2",2,3;
+
+    - mozliwosci edytora:
+        - kasowanie bramki
+        - kasowanie polaczenia
+        - kopiowanie zaznaczonych elementow
+        - podmiana modulu na inny jezeli ma tyle samo wejsc
+    - tryb pracy modulu: projektowanie / uzycie
+
+    - tablica aktywnych Ikow obiektow gdzies trzymana statycznie i dopisac funkcje shuffle
+      ktora zamienic miejscami kilkaset razy idki w tej tablicy, doda to troche losowosci
+      w dzialaniu sieci
+    - przy tworzeniu modulu wszystkie obiekty input/output staja sie pinami in/out
+    - wydajnosc!! przerobienie wszystkich stringow na tablice intow i nie uzywanie .length
 
     - mozliwosc nazwania obiektu in/out
     - obiekt wyswietlacza LCD :)
@@ -69,7 +146,7 @@ TODO aktualne:
 ................................................................................................................................
 ................................................................................................................................
                                                                                                                 ^^^^^^^^
-512 bajtów (32x128 bits = 32x16 bytes)
+512 bajtï¿½w (32x128 bits = 32x16 bytes)
     
     
 xxxxxxxx xxxxxxxx xxxxxxxx
@@ -96,15 +173,22 @@ xxxxxxxx xxxxxxxx xxxxxxxx
 --------------------------------------------------------------------------------
 Koncepcja:
 
-Interface:
-- pasek gorny:      zalogowany user, twoje zapisane projekty, 
-- pasek narzedzi:   lapka poruszania sie, interakcja ze switchami, 
-                    zaznaczanie, bramki: AND/OR/NOT/XOR/NAND/NOR/XNOR, 
-                    inputy: SWITCH,HIGH,LOW, outputy: LED/7SEG/16SEG/
-- pasek widoku:     poziomy wyswietlania obiektow, poziomy wyswietlania sciezek
-
-    mozliwosci: autozapis projektu, zrzut projektu, wstawianie zapisanych modulow 
-    (wybor z listy i przeladowanie strony by zaladowac JS'a)
-
+    - pasek gorny:      zalogowany user, twoje zapisane projekty, 
+    - pasek narzedzi:   lapka poruszania sie, interakcja ze switchami, 
+                        zaznaczanie, bramki: AND/OR/NOT/XOR/NAND/NOR/XNOR, 
+                        inputy: SWITCH,HIGH,LOW, outputy: LED/7SEG/16SEG/
+    - pasek narzedzi: usun calkiem (usuwa tez connecty)
+                      usun tylko objekt (zostawia przypiecia z WireLink)
+                      Scal wireLink
+                      rotacje zaznaczonych obiektow
+    - pasek widoku:     poziomy wyswietlania obiektow, poziomy wyswietlania sciezek
+    - mozliwosc schowania opcji wszystkich (full screen)
+    - wyswietlanie przyciskow navigacji (prawo lewo gora dol) dla przegladarek mobilnych
+    - test wyswietlania w iframe z opcja tylko "interact"
+    - rozne tryby symulacji Opoznienia bramek i Najszybszy zegar
+    - modul debug do ktorego mozna podpiac piny i patrzec na stan sygnalow ("WATCH" itp)
+    - modul debug dla pamieci RAM i ROM
+    - mozliwosci: autozapis projektu, zrzut projektu, wstawianie zapisanych modulow 
+      (wybor z listy i przeladowanie strony by zaladowac JS'a)
     - moze zrobic modul, ktory wysyla sygnalem radiowym wartosc binarna? :)
     - eter niech bedzie z zakluceniami a co :D

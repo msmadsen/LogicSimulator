@@ -666,6 +666,19 @@ function CpuSimEditor()
         }
     }
     
+    this.rotateObjects = function(side)
+    {
+        var objs = m.getModuleObjs();
+        var moduleObj;
+        var i;
+        
+        for (i=0; i<objs.length; i++) {
+            moduleObj = objs[i];
+            if (moduleObj.getSelected())
+                moduleObj.rotate90(side);
+        }
+    }
+    
     this.editingModeChange = function(obj) {
         obj.parent().find('> a').removeClass('active');
         obj.addClass('active');

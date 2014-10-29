@@ -57,6 +57,14 @@ function Vector2d(_x, _y)
         return vecA.dot(vecB); 
     }
     
+    this.swapAxes = function()
+    {
+        var tmp;
+        tmp = x;
+        x = y;
+        y = tmp;
+    }
+    
     this.getAngleToVec = function(b) {
         var angle = Math.acos(this.cos(b)) * 180.0/Math.PI;
         
@@ -122,6 +130,40 @@ function Vector2d(_x, _y)
         if ( ! (this.getX()<tmp.getX() && this.getY()<tmp.getY()))
             return false; 
        return true;
+    }
+    
+    this.rotate90Left = function(center, objSize) {
+        var tmp = new Vector2d(x, y);
+        var halfObjSize = new Vector2d(objSize.getX()/2.0, objSize.getY()/2.0);
+        var tmpX, tmpY;
+        
+        tmp = tmp.sub(center);
+        tmp = tmp.add(halfObjSize);
+        tmpX = tmp.getX();
+        tmpY = tmp.getY();
+        tmp.setX(tmpY);
+        tmp.setY(-tmpX);
+        tmp = tmp.sub(halfObjSize);
+        tmp = tmp.add(center);
+        
+        return tmp;
+    }
+    
+    this.rotate90Right = function(center, objSize) {
+        var tmp = new Vector2d(x, y);
+        var halfObjSize = new Vector2d(objSize.getX()/2.0, objSize.getY()/2.0);
+        var tmpX, tmpY;
+        
+        tmp = tmp.sub(center);
+        tmp = tmp.add(halfObjSize);
+        tmpX = tmp.getX();
+        tmpY = tmp.getY();
+        tmp.setX(-tmpY);
+        tmp.setY(tmpX);
+        tmp = tmp.sub(halfObjSize);
+        tmp = tmp.add(center);
+        
+        return tmp;
     }
     
     this.toString = function() {
@@ -223,7 +265,7 @@ function helperGenerateBitsRand(len)
     return ret;
 }
 
-function helperSetupBitsNESWLocations(__c) 
+function helperSetupBitsNESWLocations(__c)
 {
     var i, j;
     var arrNESWLoc;
@@ -248,6 +290,8 @@ function helperSetupBitsNESWLocations(__c)
                     arrBitLoc = __c.getOutputBitsLocations();
                     break;
         }
+        
+        arrNESWLoc.length = 0;
 
         for (i=0; i<arrBitLoc.length; i++) {
             pin.setX( arrBitLoc[i].getX() + PIN_SIZE*0.5 );
@@ -294,7 +338,7 @@ function helperSetupBitsNESWLocations(__c)
         }
     }
 }
-function helperSetupBitsTmpCoordinates(__c) 
+function helperSetupBitsTmpCoordinates(__c)
 {
     var i;
     var arrBitsTmpCoord;
@@ -386,7 +430,6 @@ function CombinationalBase()
             case OBJ_INPUT:    objSpec.setLow(); break;
         }
     }
-
     this.getSize = function() { return size; }
     this.setSize = function(s) { size = s; }
     this.getInputBitsLocations = function() { return inputBitsLocations; }
@@ -498,7 +541,7 @@ function Input(__p)
     
     this.configureAs = function() {
         p.setObjClass("Input");
-        p.setSize(new Vector2d(32.0, 32.0)); 
+        p.setSize(new Vector2d(128.0, 32.0)); 
         p.setInputBitsCount(0);
         p.setOutputBitsCount(1);
         p.getOutputBitsLocations().push( new Vector2d(24, 12) );
@@ -588,6 +631,47 @@ function ModuleObj()
             case "Output"   : obj.configureAs(OBJ_OUTPUT); break;
             case "WireLink" : obj.configureAs(OBJ_WIRELINK); break;
         }
+    }
+    this.rotate90 = function(side) {        
+        var iLoc, iLocC;
+        var oLoc, oLocC;
+        var sizeCenter = new Vector2d(obj.getSize().getX()/2.0, obj.getSize().getY()/2.0);
+        var posObjCenter = pos.add(sizeCenter);
+        var i;
+        
+        if (side!='left' && side!='right')
+            return;
+        
+        iLoc = obj.getInputBitsLocations();
+        iLocC = obj.getInputBitsCount();
+        oLoc = obj.getOutputBitsLocations();
+        oLocC = obj.getOutputBitsCount();
+        
+        switch (side) {
+            case 'left' : rotation = (rotation==0) ? 3 : (rotation-1);
+                          for (i=0; i<iLocC; i++)
+                              iLoc[i] = iLoc[i].rotate90Left(sizeCenter, new Vector2d(PIN_SIZE, PIN_SIZE));
+                          for (i=0; i<oLocC; i++)
+                              oLoc[i] = oLoc[i].rotate90Left(sizeCenter, new Vector2d(PIN_SIZE, PIN_SIZE));
+                          break;
+            case 'right': rotation = (rotation + 1) % 4;
+                          for (i=0; i<iLocC; i++)
+                              iLoc[i] = iLoc[i].rotate90Right(sizeCenter, new Vector2d(PIN_SIZE, PIN_SIZE));
+                          for (i=0; i<oLocC; i++)
+                              oLoc[i] = oLoc[i].rotate90Right(sizeCenter, new Vector2d(PIN_SIZE, PIN_SIZE));
+                          break;
+        }
+        
+        // rotate obj size
+        //obj.getSize().swapAxes();
+        
+        // rotate obj position in module
+        pos.setX( posObjCenter.getX() - sizeCenter.getY() );
+        pos.setY( posObjCenter.getY() - sizeCenter.getX() );
+        
+        
+        // rebuild pin directions (for bezier curves)
+        helperSetupBitsNESWLocations(obj);
     }
     this.getObj = function() { return obj; }
     this.setName = function(n) { name = n; }
