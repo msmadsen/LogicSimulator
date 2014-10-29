@@ -1,0 +1,79 @@
+/**
+ *    Main settings (layout etc.)
+ */
+
+body {
+    background-repeat: repeat;
+    background-position: left top;
+    background-color: black;
+    font-family: Tahoma, Arial, Verdana, serif, sans-serif;
+    font-size: 11px; color: #f5f5f5;
+    line-height: normal; margin: 0; padding: 0; text-align: left;
+}
+
+a { text-decoration: none; font-weight: normal; color: #f5f5f5; cursor: pointer; }
+a:hover { text-decoration: none; }
+h1, h2, h3, h4, h5 { line-height: normal; margin: 0; padding: 0; font-weight: bold; }
+
+/* reset */
+div, a, textarea, el, p, span, tr, td, table, img, input, form, ul, li { border: 0; margin: 0; padding: 0; outline-style: none; outline-width: 0; outline: none; }
+table { border-collapse: collapse; border-spacing: 0 }
+
+.clear { float: none  !important; clear: both !important; height: 0px !important; width: 0px !important; padding: 0 !important; margin: 0 !important; overflow: hidden !important; font-size: 1px !important; display: block !important; }
+.fright { float: right; }
+.fleft { float: left; }
+.hidden-img { display: none; height: 0; width: 0; overflow: hidden; }
+.valg-t { vertical-align: top; }
+.pos-rel { position: relative; }
+.h0px { height: 0px !important; position: relative; top: 0px; left: 0px; }
+.mr-20px { margin-right: 20px; }
+.ml-20px { margin-left: 20px; }
+
+.highlight { background-color: #ffff85; }
+
+/* IE-7 z-index bugs corrections */
+.ie7-zi-0 { z-index: 0; position: relative; top: 0px; left: 0px; }
+.ie7-zi-1 { z-index: 1; position: relative; top: 0px; left: 0px; }
+.ie7-zi-2 { z-index: 2; position: relative; top: 0px; left: 0px; }
+.ie7-zi-3 { z-index: 3; position: relative; top: 0px; left: 0px; }
+.ie7-zi-4 { z-index: 4; position: relative; top: 0px; left: 0px; }
+.ie7-zi-5 { z-index: 5; position: relative; top: 0px; left: 0px; }
+.ie7-abs-fix { position: relative; top: 0; left: 0; height: 0px; overflow: hidden; }
+
+
+/**
+ *  Main
+ */
+
+html, body { overflow: hidden; width: 100%; height: 100%; }
+#global-wraper { width: 1px; height: 1px; position: relative; }
+#top-widgets { position: absolute; top: 0px; left: 0px; width: 0px; height: 70px; background-color: #535353; z-index: 100; box-shadow: 2px 2px 5px rgba(0, 0, 0, .41); }
+#sim-window-div { position: absolute; top: 0px; left: 0px; width: 0px; height: 0px; background-color: #262626; overflow: hidden; z-index: 2; }
+#sim-window-canvas { position: absolute; top: 0px; left: 0px; width: 0px; height: 0px; background-color: transparent; overflow: hidden; z-index: 3; }
+
+.properties-cont { position: absolute; border: 1px solid #282828; border-left-width: 0px; min-height: 100px; z-index: 100; background-color: #535353; box-shadow: 2px 2px 5px rgba(0, 0, 0, .41); }
+.properties-cont .h { background-color: #353535; border-top: 1px solid #474747; border-bottom: 1px solid #282828; padding: 5px; color: #aaaaaa; font-size: 11px; line-height: 11px; text-transform: uppercase; white-space: nowrap; }
+.properties-cont .p { padding: 5px; }
+.properties-cont table { width: 100%; color: #b1b1b1; font-size: 11px; line-height: 11px; }
+.properties-cont table tr th { font-weight: normal; text-align: left; vertical-align: top; padding: 0 5px 3px 0; }
+.properties-cont table tr th label { display: block; padding: 1px 0 0 0; }
+.properties-cont table tr td { text-align: left; vertical-align: top; padding: 0 0 3px 0; }
+.properties-cont table tr td input { border: 1px solid #303030; background-color: #3a3a3a; color: #f5f5f5; display: block; font-size: 11px; font-family: Tahoma; }
+
+.properties-obj { top: 100px; left: 0px; }
+.properties-status { top: 300px; left: 0px; }
+
+#editing-modes { padding: 0 0 0 10px; }
+#editing-modes a.active { color: red; }
+
+
+/** 
+ *  Objects and Modules
+ */
+ 
+.gate-nand { width: 50px; height: 50px; position: absolute; background: url('../images/gate-nand.png') no-repeat left top; background-size: 100% 100%; }
+.gate-nand .in { width: 6px; height: 6px; position: absolute; background: url('../images/input.png') no-repeat left top; background-size: 100% 100%; }
+.gate-nand .out { width: 6px; height: 6px; position: absolute; background: url('../images/output.png') no-repeat left top; background-size: 100% 100%; }
+
+.hover { opacity: 0.3; }
+.selected { outline: 1px dashed  }

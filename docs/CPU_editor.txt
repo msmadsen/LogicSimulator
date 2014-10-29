@@ -1,0 +1,15 @@
+Logic Editor:
+
+    GateNand/Modul - nowe metody:
+        - getSize()
+        - getInputBitsLocations
+        - getOutputBitsLocations
+        
+    ModuleObj - nowe metody:
+        - getPos
+        
+        
+        
+        
+TODO:
+    - w modulach ktore zrobilem (moduleAnd etc) dodac metody ktore dodalem

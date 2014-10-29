@@ -1,0 +1,146 @@
+Podstawa sa nastepujace obiekty:
+    - bramka AND                 2 wejscia, 1 wyjscie       [ ]
+    - bramka OR                  2 wejscia, 1 wyjscie       [ ]
+    - bramka NOT                 1 wejscie, 1 wyjscie       [ ]
+    - bramka XOR                 2 wejscia, 1 wyjscie       [ ]
+    - bramka NAND                2 wejscia, 1 wyjscie       [ ]
+    - bramka NOR                 2 wejscia, 1 wyjscie       [ ]
+    - rejestr N bitowy           N + 1RST wejsc, N wyjsc    [c]
+    - RAM, N bitowy x M adresow  N + M + WE wejsc, N wyjsc  [c]
+    - ROM, N bitowy x M adresow  N + M wejsc, N wyjsc       [ ]
+    
+Kazdy z obiektow powyzej ma taki interfejs:
+    - clockTick            daje info ze czas zapisac wejscia do rejestrow, RAMu etc
+    - debug                wypluwa stan i nazwe elementu
+    - inputBits            okresla liczbe bitow wejscia
+    - outputBits           okresla liczbe bitow wyjscia
+    - objClass             zwraca nazwe - klase obiektu
+    - setInputData         ustawia nadchodzace bity w tymczasowej zmienej atInputData - setInputData(bits, bitstart)
+    - isReadyToPropagate   true: kiedy mozna propagowac 
+                               dla bramki OR sa rozne przepadki: 
+                                 - przypadek ?? oznacza false
+                                 - przypadek ?1 oznacza true
+                               dla bramki AND sa rozne przepadki: 
+                                 - przypadek ?? oznacza false
+                                 - przypadek ?0 oznacza true
+    - resetPropagateState  atInputData ustawiane jest na "?" a stableLimit na jakas wartosc np (50)
+                               previousInputData = -1;
+                               previousOutputData = -2;
+    - getOutputData        zwraca rozne wartosci:
+                               - zwraca prawdziwe wyjscia gdy isReadyToPropagate==true
+                               - zwraca null gdy isReadyToPropagate==false
+                               - zwraca -1 gdy <=stableLimit oznacza to jakis wyscig!!!!!
+                               gdy isReadyToPropagate==true:
+                                wylicz bityWyjsciowe 
+                                if 
+                                    bityWejsciowe || bityWyjsciowe != previousInputData || previousOutputData 
+                                    stableLimit--;
+                                else
+                                    ustaw nowe previousInputData/previousOutputData
+
+Zmienne wewnetrzne sa takie:
+    - atInputData
+    - stableLimit
+    - savedData            tylko w rejestrach
+    - previousInputData
+    - previousOutputData
+    - objClass
+    - inputBits
+    - outputBits
+    
+    
+    
+----------------------
+Dodatkowo musi byc klasa do tworzenia nowych obiektow:
+- Module
+- ModuleObj
+- ModuleConn
+
+Modul na dodatkowe metody:
+- addObj(type, name)
+- addConn(objA, objB, objA_bitstart, objB_bitstart, objA_bitlen, objB_bitlen)
+- set/get dla inputBits/outputBits/name
+----------------------
+zmienne pomocnicze:
+- helperGenerateBits etc
+
+implementacja:
+    - clockTick            dla kazdego obiektu uruchamiamy clockTick
+    - isReadyToPropagate   gdy jest choc jeden "?" w atInputData false
+    - getOutputData        zwraca rozne wartosci:
+                            wyliczanie bitow wyjsciowych:
+                            
+                            outputData = "???????";
+                            petla po wszystkich elementach {
+                                resetPropagationState
+                            }
+                            
+                            wez bity wejsciowe i ustaw je we wszysrtkich powiazanych
+                            while (true) {
+                                petla po wszystkich elementach {
+                                    outputData = getOutputData();
+                                    
+                                    if (outputData===null) {
+                                        nic
+                                    } else 
+                                        if (outputData===-1) {
+                                            wyscig!! KONIEC
+                                            FLAG_RACE = true;
+                                        } else {
+                                            
+                                            znajdz powiazania do aktualnego obiektu
+                                            i ustaw wszystkie bity we wszystkich powiazanych obiektach
+                                            z danych wyjsciowych
+                                            jezeli jest to __output ustaw output
+                                            
+                                        }
+                                }
+                                
+                                jakis licznik wychodzacy po uplywie jakiegos czasu i BREAK;
+                                FLAG_FLOATING_WIRES = true;
+                            }
+                                   
+
+gateAnd = new GateAnd();
+gateAnd.resetPropagateState();
+gateAnd.setInputData("11110", 0);
+outputData = gateAnd.getOutputData();
+gateAnd.clockTick();
+
+
+cpu = new Cpu();
+
+white (true) {
+    cpu.display();
+    
+    cpu.resetPropagateState();
+    
+    cpu.setInputData("11110", 0);
+    cpu.setInputData("1", 5);
+    cpu.setInputData("1010001", 6);
+    outputData = cpu.getOutputData();
+
+    cpu.clockTick();
+}
+
+
+
+--------------------------------------------------------------------------------
+
+Interface:
+- pasek gorny:      zalogowany user, twoje zapisane projekty, 
+- pasek narzedzi:   lapka poruszania sie, interakcja ze switchami, zaznaczanie, bramki: AND/OR/NOT/XOR/NAND/NOR/XNOR, inputy: SWITCH,HIGH,LOW, outputy: LED/7SEG/16SEG/
+- pasek widoku:     poziomy wyswietlania obiektow, poziomy wyswietlania sciezek
+
+mozliwosci: autozapis projektu, zrzut projektu, wstawianie zapisanych modulow (wybor z listy i przeladowanie strony by zaladowac JS'a)
+
+
+
+
+
+
+
+
+
+
+

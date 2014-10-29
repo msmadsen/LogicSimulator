@@ -1,0 +1,132 @@
+                 {1}_number  ->  numer as 8bit binary
+                 {3}_number  ->  numer as 24bit binary
+                 
+                 {1x12}_number  ->  numer as 8bit binary repeated 12 times
+                 {3x7}_number   ->  numer as 24bit binary repeated 7 times
+                 
+                 number can be:
+                    23323      normal decimal
+                    -3234      normal decimal with sign
+                    0x32       normal hex number (bit from left filled by zeros)
+                    0x32FA65   normal hex number (bit from left filled by zeros)
+                    b11010111  normal hex number (bit from left filled by zeros)
+                    b101       normal hex number (bit from left filled by zeros)
+
+
+-------------------------------------------------------
+---- variable define (bytes 8bit)
+-------------------------------------------------------
+
+byte variableByte;
+        variableByte:            {1}_0x00
+        
+byte variableByteSeted = 123;
+        variableByteSeted:       {1}_123
+        
+byte variableCharSeted = 'a';
+        variableCharSeted:       'a'
+
+byte[3] variableByteArray;
+        variableByteArray:       {1x3}_0x00
+    
+byte[3] variableByteArraySeted = [1, -10, 43];
+        variableByteArraySeted:  [{1}_1, {1}_-10, {1}_43]
+        
+byte[5] variableStringSeted = "TEST";
+        variableStringSeted:     "TEST"
+        
+-------------------------------------------------------
+---- variable define (int 24bit)
+-------------------------------------------------------
+
+int variableInt;
+        variableInt:            {3}_0x00
+        
+int variableIntSeted = 457781;
+        variableIntSeted:       {3}_457781
+
+int[3] variableIntArray;
+        variableIntArray:       {3x3}_0x00
+        
+int[3] variableIntArraySeted = [1, 10, 43];
+        variableIntArraySeted:  [{3}_1, {3}_10, {3}_43]
+        
+-------------------------------------------------------
+---- variable define (ptr 24bit)
+-------------------------------------------------------
+
+ptr pointer;
+        pointer:                {3}_0x00
+        
+-------------------------------------------------------
+---- aritmetic
+-------------------------------------------------------
+
+byteA = byteB {-?-} byteC;                + - * / & | ~ ^
+
+        load    reg0, _byteB
+        load    reg1, _byteC
+        {-?-}     reg2, reg0, reg1        add sub mul div and or not xor
+        store   _byteA, reg2
+        
+{-?reg?-} = intVar
+                                                     ; 0 1 2 3 4 5 6 7
+        copyCont        reg7, 0                      ;             ^ ^
+        ptr             reg6, _intVar
+        loadPtrOffset   {-?reg?-}, reg6, reg7        ; {-?reg?-} = MemoryAt[SegmentStart + reg6 + reg7]
+        rollLeft        {-?reg?-}                    ; 0x0000FF  -->  0x00FF00
+        inc             reg7                         ; reg7++
+        loadPtrOffset   {-?reg?-}, reg6, reg7        ; {-?reg?-} = MemoryAt[SegmentStart + reg6 + reg7]
+        rollLeft        {-?reg?-}                    ; 0x00FF22  -->  0xFF2200
+        inc             reg7                         ; reg7++
+        loadPtrOffset   {-?reg?-}, reg6, reg7        ; {-?reg?-} = MemoryAt[SegmentStart + reg6 + reg7]
+        
+intVar[{4} {i}] load into {-?reg?-}
+{-?reg?-} = intVar[base + x]
+        copyCont        reg7, 0
+        copyCont        reg5, 1
+        ptr             reg6, _intVar
+        loadPtrOffset   {-?reg?-}, reg6, reg7        ; {-?reg?-} = MemoryAt[SegmentStart + reg6 + reg7]
+        rollLeft        {-?reg?-}                    ; 0x0000FF  -->  0x00FF00
+        add             reg7, reg7, reg5             ; reg7 = reg7 + 1
+        loadPtrOffset   {-?reg?-}, reg6, reg7        ; {-?reg?-} = MemoryAt[SegmentStart + reg6 + reg7]
+        rollLeft        {-?reg?-}                    ; 0x00FF22  -->  0xFF2200
+        add             reg7, reg7, reg5             ; reg7 = reg7 + 1
+        loadPtrOffset   {-?reg?-}, reg6, reg7        ; {-?reg?-} = MemoryAt[SegmentStart + reg6 + reg7]
+        
+
+if (tab[i] == 32) {
+
+} else {
+
+}
+        
+        
+        
+        0 ... 16 777 215
+        
+        x x x x x x x x  |  x x x x x x x x  |  x x x x x x x x
+        ~~~~~~~~~~~   ~~~~~~~~~ ~~~~~ ~~~~~
+        opcode        regA      regB  regC
+        
+-------------------------------------------------------
+---- set value to variable
+-------------------------------------------------------        
+
+variableByte = 21;
+        copyCont     reg0, 21                       ; variableByte = 21;
+        store        _variableByte, reg0            ; 
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

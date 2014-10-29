@@ -1,0 +1,61 @@
+.OkiCheckbox { display: none !important; }
+.OkiRadiobox { display: none !important; }
+.OkiSelect { display: none !important; }
+
+.oki-prev { display: block; width: 35px; height: 25px; background: url('../images/arrow-left.png') no-repeat left top; position: relative; }
+.oki-prev.inactive { background-position: left bottom; }
+.oki-next { display: block; width: 35px; height: 25px; background: url('../images/arrow-right.png') no-repeat right top; position: relative; }
+.oki-next.inactive { background-position: right bottom; }
+
+.oki-button-tab { display: block; margin: 0; padding: 0; height: 26px; cursor: pointer; }
+.oki-button-tab span { display: block; background:url('../images/oki-button-tab-right.png') no-repeat right top; margin: 0; padding: 0 6px 0 0; height: 26px; }  
+.oki-button-tab span span { background: url('../images/oki-button-tab-left.png') no-repeat left top; margin: 0; padding: 0 0 0 6px; }
+.oki-button-tab span span b { display: block; padding-top: 5px; white-space: nowrap; text-align: left; font-family: 'UnitedSans_Bold'; font-weight: normal; font-size: 16px; line-height: 16px; color: #393939; text-transform: uppercase; }
+.oki-button-tab:hover span { background-position: right bottom; }
+.oki-button-tab:hover span span { background-position: left bottom; }
+.oki-button-tab.active span { background-position: right bottom; }
+.oki-button-tab.active span span { background-position: left bottom; }
+
+.oki-button-dark { display: block; margin: 0; padding: 0; height: 29px; cursor: pointer; }
+.oki-button-dark span { display: block; background:url('../images/oki-button-dark-right.png') no-repeat right top; margin: 0; padding: 0 6px 0 0; height: 29px; }  
+.oki-button-dark span span { background: url('../images/oki-button-dark-left.png') no-repeat left top; margin: 0; padding: 0 0 0 6px; }
+.oki-button-dark span span b { display: block; padding-top: 8px; white-space: nowrap; text-align: left; font-family: 'UnitedSans_Bold'; font-weight: normal; font-size: 13px; line-height: 13px; color: #c6c6c6; text-transform: uppercase; }
+.oki-button-dark:hover span { background-position: right bottom; }
+.oki-button-dark:hover span span { background-position: left bottom; }
+
+.oki-checkbox { cursor: pointer; display: block; width: 13px; height: 13px; background: url('../images/oki-checkbox.png') no-repeat left top; }
+.oki-checkbox.active { background-position: left bottom !important; }
+.oki-checkbox-txt { display: block; padding: 1px 25px 0 7px; cursor: pointer; color: #241500; font-weight: bold; font-size: 12px; line-height: 12px; font-family: "Arial"; }
+
+.oki-radiobox { cursor: pointer; display: block; width: 15px; height: 15px; background: url('../images/oki-radiobox.png') no-repeat left top; }
+.oki-radiobox.active { background-position: left bottom !important; }
+.oki-radiobox-txt { display: block; padding: 1px 25px 0 7px; cursor: pointer; color: #452A00; font-weight: normal; font-size: 13px; line-height: 13px; font-family: "Arial"; }    
+
+.oki-input-white { cursor: text; line-height: 13px; display: block; margin: 0; padding: 0; height: 27px; }
+.oki-input-white span { display: block; background: url('../images/oki-input-white-right.png') no-repeat right top; margin: 0; padding: 0 12px 0 0; height: 27px; }
+.oki-input-white span span { background: url('../images/oki-input-white-left.png') no-repeat left top; margin: 0; padding: 0 0 0 7px; }
+.oki-input-white span span b { overflow: hidden; display: block; font-size: 1px; height: 5px; }
+.oki-input-white span span input { background: none; font-weight: normal; font-family: "Arial"; text-align: left; color: #241500; font-size: 13px; line-height: 13px; display: block; margin: 0; padding: 0; width: 100%; }
+.oki-input-white:hover span { background-position: right bottom; }
+.oki-input-white:hover span span { background-position: left bottom; }
+
+.oki-select { cursor: pointer; height: 23px; margin: 0; padding: 0; display: block }
+.oki-select span { display: block; background: url('../images/oki-select-right.png') no-repeat right top transparent; margin: 0; padding: 0 23px 0 0; height: 23px; }
+.oki-select span span { background: url('../images/oki-select-left.png') no-repeat left top transparent; margin: 0; padding: 0 0 0 5px; }
+.oki-select:hover span { background-position: right bottom; }
+.oki-select:hover span span { background-position: left bottom; }
+.oki-select span span b { overflow: hidden; display: block; font-size: 1px; height: 3px; }
+.oki-select span span input { border: none 0; background: none; font-family: "Arial"; font-weight: normal; color: #241500; font-size: 13px; line-height: 13px; display: block; padding: 0; margin: 0; width: 100%; cursor: pointer; }
+.oki-select ul { display: none; position: relative; z-index: 99999; text-align: left; top: -1px; list-style: none; background: #eee; border: 1px solid #f5f5f5; padding: 0; margin: 0; margin-right: 0px; margin-left: 0px; }
+.oki-select ul.empty { height: 25px; }
+.oki-select ul li { padding: 0; margin: 0; }
+.oki-select ul li a { margin: 0; padding: 7px 10px; display: block; font-weight: normal; color: #241500; font-size: 12px; line-height: 12px; text-decoration: none; }
+.oki-select ul li a:hover { background: #f3f3f3; text-decoration: none; }
+.oki-select ul li a.active { background: #e5e5e5; text-decoration: none; }
+
+/* float helpers */
+.fleft { float: left; }
+.fright { float: right; }
+.clear { float: none  !important; clear: both !important; height: 0px !important; width: 0px !important; padding: 0 !important; margin: 0 !important; overflow: hidden !important; font-size: 1px !important; display: block !important; }
+
+

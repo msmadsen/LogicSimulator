@@ -1,0 +1,419 @@
+Jezyk programowania:
+
+    zmienne:
+        - byte jedenBajt;
+        - byte[23] tablicaBajtow;
+        - int jedenInt;
+        - int[23] tablicaIntow;
+        - ptr wskaznik;
+
+    if'y:
+        Zawsze jedna konkretna operacja w if'ie
+    
+        if (a<3) {
+        }
+        
+    petle:
+        Tylko petla while z warunkiem w postaci jednej operacji
+        
+        i = 0;
+        while (i<10) {
+          i = i + 1;
+        }
+
+    Funkcje:
+        Funkcje nie zwracaja wyniku. Wszystko przez parametry:
+        
+            function jakasFunkcja(parA, parB, return)
+            {
+                return = parA + parB;
+            }
+            
+            jakasFunkcja(parA, parB, return);
+        
+    Operacje arytmetyczne:
+        Tylko dwa parametry w jakiejkolwiek operacji.
+        
+            a = a + b;
+            a = a < b;
+            a = a / b;
+            
+    Tablice:
+        Mozna oczywiscie uzywac tablic :)
+        
+            d = 12;
+            b_32 = b[32];
+            c_d = c[d];
+            a = b_32 + c_d;
+            
+            copyc        r0, 12         ; d = 12;
+            store        _d, r0
+            copyc        r0, 32         ; b_32 = b[32];
+            loadOffset   r1, _b, r0
+            store        _b_32, r1
+            load         r0, _d         ; c_d = c[d];
+            loadOffset   r1, _c, r0
+            store        _c_d, r1
+            load         r0, _b_32      ; a = b_32 + c_d;
+            load         r1, _c_d
+            add          r2, r1, r2
+            store        _a, r2
+            
+    Wskazniki:
+        Chyba trzeba przemyslec :)
+        
+        // zwykle zmienne
+        int jakasZmienna;
+        int d;
+        
+        d = jakasZmienna;
+        d = 50;
+        
+        load    r0, _jakasZmienna      ; d = jakasZmienna;
+        store   _d, r0
+        copyc   r0, 50                 ; d = 50;
+        store   _d, r0
+        
+        // zmienne wskaznikowe
+        int jakasZmienna;
+        ptr d;
+        
+        d = &jakasZmienna;
+        *d = 50;
+        
+        ptr             r0, _jakasZmienna      ; d = &jakasZmienna;
+        store           _d, r0
+        
+        load            r0, _d                 ; *d = 50;
+        copyc           r1, 0
+        copyc           r2, 50
+        storePtrOffset  r0, r2, r1
+        
+        
+    Definiowanie zmiennych zaraz po inicjalizacji:
+    
+        pseudoC:
+    
+        int liczba = 12;
+        byte[7] jakisCiag = "Robert";
+        
+        asm:
+        
+        _liczba:     12
+        _jakisCiag:  "Robert"
+        
+        
+    Przykladowe kody:
+    
+        dupa = a < b;
+            
+              load      r0, _a
+              load      r1, _b
+              cmpL      r0, r1
+              jmpnz     _nz
+              copyCont  r2, 0
+              jmp       _end
+        _nz:  copyCont  r2, 1
+        _end: store     _dupa, r2
+
+
+        suma = a + b;
+        if (suma == 32) {
+        } else {
+        }
+        
+                   load      r0, _a         ; suma = a + b;
+                   load      r1, _b
+                   add       r3, r0, r1,
+                   store     _suma, r3
+              
+                   load      r0, _suma      ; if (suma == 32)
+                   copyCont  r1, 32
+                   cmpEq     r0, r1
+                   jmpnz     _if_true
+                   jmp       _if_else
+        _if_true:  // if code true
+                   // if code true
+                   // if code true
+                   jmp       _end
+        _if_else:  // if code false         
+                   // if code false
+                   // if code false         
+        _end:                    
+
+
+        
+    Test ladowania pamieci do rejestru
+    
+        int dest;
+        int src;
+
+        dest = src;
+        
+        copyCont        reg3, 0
+        copyCont        reg1, 1
+        ptr             reg2, _src                     
+        loadPtrOffset   reg0, reg2, reg3             ; reg0 = MemoryAt[SegmentStart + reg2 + reg3]
+        rollLeft        reg0                         ; 0x0000FF  -->  0x00FF00
+        add             reg3, reg3, reg1             ; reg3++
+        loadPtrOffset   reg0, reg2, reg3             ; reg0 = MemoryAt[SegmentStart + reg2 + reg3]
+        rollLeft        reg0                         ; 0x00FF22  -->  0xFF2200
+        add             reg3, reg3, reg1             ; reg3++
+        loadPtrOffset   reg0, reg2, reg3             ; reg0 = MemoryAt[SegmentStart + reg2 + reg3]
+        
+        
+        
+-----------------------------------------------------------
+
+Zestaw instrukcji:
+
+    Szyna adresowa jest 24 bitowa, rozmiary rejestrow sa 24 bitowe.
+    
+    regA, regB, regC, regD  - 24 bitowy rejestr w U2
+    _label, _mem            - 24 bitowy adres w pamieci liczony
+    Zapis/odczyt rejestru do/z RAMu, portu itp zawsze z pierwszego bajtu (najmniej znaczacego)
+
+    Aritmetic:
+            00    add   regX, regA, regB   ; regX = regA + regB
+            01    sub   regX, regA, regB   ; regX = regA - regB
+            02    mul   regX, regA, regB   ; regX = regA * regB
+            03    div   regX, regA, regB   ; regX = regA / regB
+            03a   inc   regX               ; regX++
+            03b   dec   regX               ; regX--
+    Logic:
+            04    and         regX, regA, regB   ; regX = regA & regB
+            05    or          regX, regA, regB   ; regX = regA | regB
+            06    not         regX, regA         ; regX = regA
+            07    xor         regX, regA, regB   ; regX = regA ^ regB
+            08    rollRight   regA               ; regA = (regA >> 8 || (regA << 16)
+            08a   rollLeft    regA               ; regA = (regA << 8 || (regA >> 16)
+    Compare:
+            09    cmpEq    regA, regB     ; if (regA==regB) cmpFlag = 1; else cmpFlag = 0
+            10    cmpLeq   regA, regB     ; if (regA<=regB) cmpFlag = 1; else cmpFlag = 0
+            11    cmpGeq   regA, regB     ; if (regA>=regB) cmpFlag = 1; else cmpFlag = 0
+            12    cmpL     regA, regB     ; if (regA<regB) cmpFlag = 1; else cmpFlag = 0
+            13    cmpG     regA, regB     ; if (regA>regB) cmpFlag = 1; else cmpFlag = 0
+            14    cmpNeq   regA, regB     ; if (regA!=regB) cmpFlag = 1; else cmpFlag = 0
+    Branch:
+            15    jmpCond  _label         ; if (cmpFlag==1) jump to 'label'
+            16    jmp      _label         ; jump to 'label'
+            17    call     _label         ; store PC+1 in stack and jump to 'label'
+            18    ret                     ; pop return address and jump to this adress
+    Data transfers:
+            19    store        _mem, regA                     ; MemoryAt[SegmentStart + _mem] = regA
+            20    load         regA, _mem                     ; regA = MemoryAt[SegmentStart + _mem]
+  deleted   21    storeOffset  _mem, regOffset, regA             ; MemoryAt[SegmentStart + _mem + regOffset] = regA
+  deleted   22    loadOffset   regA, _mem, regOffset             ; regA = MemoryAt[SegmentStart + _mem + regOffset]
+            23    storePtrOffset  regPtr, regOffset, regA,    ; MemoryAt[SegmentStart + regPtr + regOffset] = regA
+            24    loadPtrOffset   regA, regPtr, regOffset     ; regA = MemoryAt[SegmentStart + regPtr + regOffset]
+            25    ptr             regA, _mem                    ; regA = _mem
+            26    push     regA                                 ; zapisuje na stos regA
+            27    pop      regA                                 ; odczytuje ze stosu regA
+            28    copy         regA, regB            ; regA = regB
+            29    copyCont     regA, const           ; regA = const
+    Input/Output:
+            30    dispBlink  regA, regB              ; regA(x/col) x regB(y/row)
+            31    dispBlinkOn                        ; autoBlink on
+            32    dispBlinkOff                       ; autoBlink off
+            33    disp        regA, regB, regC        ; disp[regA(x/col) x regB(y/row)] = regC
+            xx    disp        regC                 ; auto move cursor?
+            34    dispClr                             ; dips[all] = 0x00
+            35    keyboard    regA                      ; get keyboardCode from queue
+                  kbrdPressed regA, regB                ; if (keycode from regB is pressed) regA = 0xFFFFFF; else regA = 0x000000;
+            36    portInRead     regA                      ; regA = portIn
+            37    portOutWrite   regA                      ; portOut = regA
+            38    diskWrite  regPtr, regOffset, regA     ; DiskByte[regPtr + offset] = regA
+            39    diskRead   regA, regPtr, regOffset     ; regA = DiskByte[regPtr + offset]
+    CPU context:
+            40    storeContext                           ; CPU -> rejestru kontekstu             ??? to chyba robi przerwanie
+            41    restoreContext                         ; rejestr kontekstu -> do CPU
+            42    readContext regB, regOffset            ; regB = contextReg[regOffset]
+            43    writeContext regOffset, regB           ; contextReg[regOffset] = regB
+            xx    ?? process finish instruction ??
+    Segment/stack:
+            xx    setSegStart         regA                      ; segmentStart = regA
+            xx    getSegStart         regA                      ; regA = segmentStart
+            xx    setSegLen           regA                      ; segmentLength = regA
+            xx    getSegLen           regA                      ; regA = segmentLength
+            xx    getStackStartPtr    regA
+            xx    setStackStartPtr    regA
+            xx    getStackOffset      regA
+            xx    setStackOffset      regA
+            xx    getStackLen         regA
+            xx    setStackLen         regA
+    Timers:
+            xx set get
+            
+            
+            ----------------------------------------------
+            op code bit 6
+              7   6   5   4   3   2   1   0
+            128 064 032 016 008 004 002 001
+            xxx xxx xxx xxx xxx xxx            <-- op code
+            ----------------------------------------------
+            
+            
+            instruction:     jmpnz  _label
+            
+            opcode    _label2   _label1   _label0
+            ~~~~~~~~  ~~~~~~~~  ~~~~~~~~  ~~~~~~~~
+             8 bit     8 bit     8 bit     8 bit
+             
+             
+            instruction:     load   regA, _mem
+            
+            opcode    reg       _label2   _label1   _label0
+            ~~~~~~~~  ~~~~~~~~  ~~~~~~~~  ~~~~~~~~  ~~~~~~~~
+             8 bit     8 bit     8 bit     8 bit     8 bit
+             
+            ----------------------------------------------
+            
+            
+            in(bits) out(bits)
+            
+
+    Rozwinac operacje zapisu/odczytu z RAMu by dalo sie adresowac
+    cala pamiec ale tylko w procesie pracujacym na segmencie o starcie 0.
+    Proces w segmencie 0 to bedzie system i bedzie wyzwalany tylko
+    przerwaniami. Adresowanie mozliwe dlatego, ze dlugosc segmentu
+    to cala pamiec. Inne procesy beda przydzielane przez system
+    
+    Pytanie co z stosem dla zmiennych - jest tylko stos adresow dla call
+    Hmmmm.... 
+    ROZWIAZANIE: moze po prostu parametry dorzucac na adres powrotu? :) I gotowe
+    
+    Pytanie tez co z Stosem i Segmentem - zapis/odczyt tych rejestrow.
+    ROZWIAZANIE: Tylko proces w segmencie zero - system.
+
+    Pytanie co z zapisem do pamieci skoro mamy rozne dlugosci slowa.
+    Jak chce zapisac bajt to nie zapisze 16 bitow do RAMu z rejestru.
+    ROZWIAZANIE: wprowadzic tryb adresowania bajtowy i rejestrowy ByteModeOff ByteModeOn
+    
+    np  0xa0  R             regA  -> 0xa1
+        0xa1  z       <---  'o'
+        0xa2  b       <---  0x00
+        0xa3
+        0xa4
+    
+-----------------------------------------------------------
+
+Registers and flag:
+    PC                  ; absolute address 24bit
+    stackStartPointer   ; absolute address 24bit               [?]
+    stackOffset         ; absolute address 24bit               
+    stackLenght         ; stack length 24 bit                  [?]
+    segmentStart        ; absolute address of segment 24bit    [?]
+    segmentLenght       ; segment length 24 bit                [?]
+    reg0                ; 24 bit register
+    reg1                ; 24 bit register
+    reg2                ; 24 bit register
+    reg3                ; 24 bit register
+    cmpFlag             ; last compare result flag
+    carryFlag           ; '1' if last add operation creates carry                 DELETED!
+    contextRegister     ; all registers/flags from abowe - exept marked?
+
+Przerwania:
+    order   name
+    0       InterruptSegment           - when segment exceeded
+    1       InterruptStack             - when stack exceeded
+    2       InterruptProcessSys        - from keyboard SysReturn
+    3       InterruptProcessNext       - from keyboard NextProc
+    4       InterruptProcessPrev       - from keyboard PrevProc
+    5       InterruptContextSwitch     - when ContextSwitchTimer reaches zero
+
+
+Timery:
+    TimerContextSwitch        - every clock tick timer--, when reaches 0 run InterruptContextSwitch, don't timer-- if timer == 0x00
+    TimerClockMs              - every 1ms clock++, 0...999, 10bit internal, returns 24 bit
+    TimerClockSec             - every 1sec clock++, 0...86399, 17bit internal, returns 24bit
+    TimerClockDays            - every 1day clock++, 0...65535, 16bit internal, returns 24bit  (179,5 years)
+    
+    
+Przerwania 'InterruptProcess' powoduja maskowanie instrukcji wyswietlania i odczytu z klawiatury
+dla nieaktywnych procesow. Chyba musi byc jakis rejestr wiedzacy o aktywnym PID
+    
+    
+    
+    
+--------------------------------------
+
+
+Schemat:
+
+    rejestry:
+        ProgramCounter
+        OpcodeAndData       ready Bit!
+        Registers
+        MicrocodeCounter
+        
+         ProgramCounter      RAM                 OpcodeAndData                        MicroInstructionCodeMapper                  MicroCodeROM
+            |                address 0  |                                             instruction 0                               microcode 0
+            |                address 1  |                                             instruction 1                               microcode 1
+            +------------->  address 2  -        <- 1byte (instr5)      --------+     instruction 2                                 .....
+                             address 3  -  from  <- 2byte                       |     instruction 3                               microcode 43
+                             address 4  -  RAM   <- 3byte                       |     instruction 4                               microcode 44
+                             address 5  #        <- 4byte                       +---> instruction 5  (microcodeRealAdrees) --+    microcode 45
+                             address 6  #        <- 5byte                             instruction 6                          |    microcode 46
+                             address 7  #           when RAMLoadReadyFlag             instruction 7                          +--> microcode 47    control lines TO multiplexers/demultiplexers
+                               ....                                                                             + offset ----+    microcode 48                     clocks, resets etc.
+                             
+
+
+RAM:        --byte--  --byte--  --byte--  --byte--  --byte--  --byte--  --byte--  --byte--
+
+zadanie: zrobic modul RAM, ktory pobiera 5 bajtow z szyny 64 bitowej i jak na wyjsciu sa dobre dane daje flage READY
+         zapis tak samo od 1 do 3 bajtow zapis i flaga OK
+         bez flagi z RAMu nie mozna zmienic kontekstu procesora (czyli nie mozna zapisac nic do rejestrow)
+         
+         
+         
+         
+         
+         
+         
+         1ms = 1000us = 1000 ns
+         
+         1Hz -               1  - 1 sek
+         1KHz -          1 000  - 1 ms   jest milion operacji procka niech tysiac bedzie dla symulacji procka to w sekundzie mamy milion taktow zegarowych
+         1MHz -      1 000 000  - 1 us
+         1GHz -  1 000 000 000  - 1 ns
+         
+         
+         
+         
+         
+RAM:
+    in: adress, data(5bytes), WE, Clock
+   out: data(5bytes), Ready
+         
+
+scenariusz:  adress staly, dane stale, We=0, clock 0
+
+adress 8 bajtow szerokosc
+       01234567 01234567   
+0x00   -----      
+0x01    -----      
+0x02     -----     
+0x03      -----     
+0x04       ---- -   
+0x05        --- --  
+0x06         -- ---   
+0x07          - ----
+
+if (addressLast<=0x03) {
+    return data_from_address << (addressLast);
+} else {
+    return (data_from_address << (addressLast)) | (data_from_address_next >> (0x08 - addressLast));
+}
+
+
+                                    dataIn
+      address -+------------\___   [ memory ]
+               +-- +0x10 ---/       dataOut
+                                       |
+                                       |\
+                                       | \
+                                       |  shift
+                                       |  reg
+                                       |\
+                                       | \shift
