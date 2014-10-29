@@ -2,8 +2,6 @@ var SIM_FPS = 25.0;
 var SIM_FRAME_TIME = 1000.0/SIM_FPS;
 var SIM_RENDER_TIMER_ID;
 
-var PIN_SIZE = 6;
-
 var EDIT_MODE_INTERACT = 0;
 var EDIT_MODE_SELECT = 1;
 var EDIT_MODE_MOVE = 2;
@@ -118,6 +116,11 @@ function CpuSimEditor()
     var wireStart = new CpuSimEditorPinStatus();
     var wireStop = new CpuSimEditorPinStatus();
     
+    var inTriangle = false;
+    var a = new Vector2d(-100.0, 50.0);
+    var b = new Vector2d(-30.0, -10.0);
+    var c = new Vector2d(10.0, 30.0);
+    
     this.redrawStart = function() {
         var fps;
         var frameTime;
@@ -210,8 +213,15 @@ function CpuSimEditor()
         var pinArr;
         var i;
         var image;
+        var bitsTmpCoord;
+        var bitsNESWLoc;
+        var pinCtrlLength;
+        var pinSizeHalf;
         
         obj = moduleObj.getObj();
+        pinSizeHalf = cpuSimEditorCoordinates.toCanvasUnit( PIN_SIZE * 0.5 );
+        pinCtrlLength = cpuSimEditorCoordinates.toCanvasUnit( PIN_SIZE * 10 );
+        
 
         // draw gate
         this.getCanvasModuleObj(moduleObj, objXY, objDim);
@@ -222,8 +232,10 @@ function CpuSimEditor()
 
         // draw input pins
         pinArr = obj.getInputBitsLocations();
+        bitsTmpCoord = obj.getInputBitsTmpCoordinates();
+        bitsNESWLoc = obj.getInputBitsNESWLocations();
         for (i=0; i<pinArr.length; i++) {
-            this.getCanvasModuleObjPin(objXY, pinArr[i], pinXY, pinDim);    
+            this.getCanvasModuleObjPin(objXY, pinArr[i], pinXY, pinDim);
             
             // wire active test
             if ( (wireStart.getModuleObjIndex()===moduleObjIndex && wireStart.getIsInput()===true && wireStart.getPinIndex()===i) || 
@@ -231,11 +243,24 @@ function CpuSimEditor()
                 image = document.getElementById('pin-input-s'); else
                 image = document.getElementById('pin-input');
         
+            // draw pin
             ctx.drawImage(image, pinXY.getX(), pinXY.getY(), pinDim.getX(), pinDim.getY());
+            
+            // save computed location
+            bitsTmpCoord[i*2].setX( pinXY.getX() + pinSizeHalf );
+            bitsTmpCoord[i*2].setY( pinXY.getY() + pinSizeHalf );
+            switch (bitsNESWLoc[i]) {
+                case 0: bitsTmpCoord[i*2 + 1].setX( bitsTmpCoord[i*2].getX() ); bitsTmpCoord[i*2 + 1].setY( bitsTmpCoord[i*2].getY() - pinCtrlLength ); break;
+                case 1: bitsTmpCoord[i*2 + 1].setX( bitsTmpCoord[i*2].getX() + pinCtrlLength ); bitsTmpCoord[i*2 + 1].setY( bitsTmpCoord[i*2].getY() ); break;
+                case 2: bitsTmpCoord[i*2 + 1].setX( bitsTmpCoord[i*2].getX() ); bitsTmpCoord[i*2 + 1].setY( bitsTmpCoord[i*2].getY() + pinCtrlLength ); break;
+                case 3: bitsTmpCoord[i*2 + 1].setX( bitsTmpCoord[i*2].getX() - pinCtrlLength ); bitsTmpCoord[i*2 + 1].setY( bitsTmpCoord[i*2].getY() ); break;
+            }
         }
         
         // draw output pins
         pinArr = obj.getOutputBitsLocations();
+        bitsTmpCoord = obj.getOutputBitsTmpCoordinates();
+        bitsNESWLoc = obj.getOutputBitsNESWLocations();
         for (i=0; i<pinArr.length; i++) {
             this.getCanvasModuleObjPin(objXY, pinArr[i], pinXY, pinDim);    
             
@@ -245,40 +270,105 @@ function CpuSimEditor()
                 image = document.getElementById('pin-output-s'); else
                 image = document.getElementById('pin-output');
 
+            // draw pin
             ctx.drawImage(image, pinXY.getX(), pinXY.getY(), pinDim.getX(), pinDim.getY());
+            
+            // save computed location
+            bitsTmpCoord[i*2].setX( pinXY.getX() + pinSizeHalf );
+            bitsTmpCoord[i*2].setY( pinXY.getY() + pinSizeHalf );
+            switch (bitsNESWLoc[i]) {
+                case 0: bitsTmpCoord[i*2 + 1].setX( bitsTmpCoord[i*2].getX() ); bitsTmpCoord[i*2 + 1].setY( bitsTmpCoord[i*2].getY() - pinCtrlLength ); break;
+                case 1: bitsTmpCoord[i*2 + 1].setX( bitsTmpCoord[i*2].getX() + pinCtrlLength ); bitsTmpCoord[i*2 + 1].setY( bitsTmpCoord[i*2].getY() ); break;
+                case 2: bitsTmpCoord[i*2 + 1].setX( bitsTmpCoord[i*2].getX() ); bitsTmpCoord[i*2 + 1].setY( bitsTmpCoord[i*2].getY() + pinCtrlLength ); break;
+                case 3: bitsTmpCoord[i*2 + 1].setX( bitsTmpCoord[i*2].getX() - pinCtrlLength ); bitsTmpCoord[i*2 + 1].setY( bitsTmpCoord[i*2].getY() ); break;
+            }
         }
     }
     
-    this.__renderInCanvasConnections = function(moduleObj, moduleObjIndex, ctx) {
-        var obj;
-        var pinXY = new Vector2d();
-        var pinDim = new Vector2d();
+    this.__renderInCanvasConnections = function(moduleObj_A, moduleObjIndex_A, ctx) {
+        var pinXY_A;
+        var pinXY_B;
+        var pinCtrlXY_A;
+        var pinCtrlXY_B;
+        var bitsTmpCoord_A;
+        var bitsTmpCoord_B;
+        var moduleObj_B;
         var pinArr;
         var i;
+        var connIdx;
+        var connObj;
+        var obj_A;
+        var obj_B;
         
-        obj = moduleObj.getObj();
+        
+
+        /*
+        // draw input pins
+        ctx.strokeStyle = "green";
+        pinArr = obj.getInputBitsLocations();
+        bitsTmpCoord = obj.getInputBitsTmpCoordinates();
+        for (i=0; i<pinArr.length; i++) {
+            pinXY = bitsTmpCoord[i*2];
+            pinCtrlXY = bitsTmpCoord[i*2 + 1];
+            
+            ctx.beginPath();
+            ctx.moveTo(pinXY.getX(), pinXY.getY());
+            ctx.lineTo(pinCtrlXY.getX(), pinCtrlXY.getY());
+            ctx.stroke();
+        }
+
 
         // draw output pins
+        ctx.strokeStyle = "yellow";
         pinArr = obj.getOutputBitsLocations();
+        bitsTmpCoord = obj.getOutputBitsTmpCoordinates();
         for (i=0; i<pinArr.length; i++) {
-            //this.getCanvasModuleObjPin(objXY, pinArr[i], pinXY, pinDim);    
+            pinXY = bitsTmpCoord[i*2];
+            pinCtrlXY = bitsTmpCoord[i*2 + 1];
+            
+            ctx.beginPath();
+            ctx.moveTo(pinXY.getX(), pinXY.getY());
+            ctx.lineTo(pinCtrlXY.getX(), pinCtrlXY.getY());
+            ctx.stroke();
         }
         
-        /*
-        moduleObjs[i].connOutIteratorReset();
-        while ((connIdx=moduleObjs[i].connOutIteratorGetNext())!==null) {
-            subDataBits = dataBits.toString().substr(moduleConns[connIdx].getObjA_bitStart(), moduleConns[connIdx].getObjA_bitLen());
 
-            if (moduleConns[connIdx].getObjB_index()!=1) {
-                moduleObjs[moduleConns[connIdx].getObjB_index()].getObj().setInputData(subDataBits, moduleConns[connIdx].getObjB_bitStart());
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = "black";
+        ctx.beginPath();
+        ctx.moveTo(300, 350);
+        ctx.bezierCurveTo(323, 212, 368, 562, 526, 423);
+        ctx.stroke();
+        */
+       
+        obj_A = moduleObj_A.getObj();
+        
+        moduleObj_A.connOutIteratorReset();
+        while ((connIdx=moduleObj_A.connOutIteratorGetNext())!==null) {
+            connObj = m.getModuleConnByIndex(connIdx);
+            moduleObj_B = m.getModuleObjByIndex(connObj.getObjB_index());
+            obj_B = moduleObj_B.getObj();
+            
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = "black";
+            ctx.beginPath();
+            ctx.moveTo(300, 350);
+            ctx.bezierCurveTo(323, 212, 368, 562, 526, 423);
+            ctx.stroke();aw
+
+
+            /*
+            subDataBits = dataBits.toString().substr(connObj.getObjA_bitStart(), connObj.getObjA_bitLen());
+            if (connObj.getObjB_index()!=1) {
+                moduleObjs[connObj.getObjB_index()].getObj().setInputData(subDataBits, connObj.getObjB_bitStart());
             } else {
                 // output
-                for (j=0; j<moduleConns[connIdx].getObjB_bitLen(); j++) {
-                    atOutputData = atOutputData.replaceAt(moduleConns[connIdx].getObjB_bitStart()+j, subDataBits[j]);
+                for (j=0; j<connObj.getObjB_bitLen(); j++) {
+                    atOutputData = atOutputData.replaceAt(connObj.getObjB_bitStart()+j, subDataBits[j]);
                 }
             }
+            */
         }
-        */
     }
     
     this.render = function() {
@@ -304,6 +394,26 @@ function CpuSimEditor()
             moduleObj = objs[i];
             this.__renderInCanvasConnections(moduleObj, i, ctx);
         }
+        
+        // render
+        var p;
+        ctx.lineWidth = 1;
+        if (!inTriangle) {
+            ctx.strokeStyle = "red";
+        } else {
+            ctx.strokeStyle = "green";
+        }
+        
+        ctx.beginPath();
+        p = cpuSimEditorCoordinates.toCanvas(a);
+        ctx.moveTo(p.getX(), p.getY());
+        p = cpuSimEditorCoordinates.toCanvas(b);
+        ctx.lineTo(p.getX(), p.getY());
+        p = cpuSimEditorCoordinates.toCanvas(c);
+        ctx.lineTo(p.getX(), p.getY());
+        p = cpuSimEditorCoordinates.toCanvas(a);
+        ctx.lineTo(p.getX(), p.getY());
+        ctx.stroke();
     }
     
     this.__renderGrid = function(ctx) {
@@ -417,6 +527,17 @@ function CpuSimEditor()
         }
     }
     
+    this.deSelectObjects = function() {
+        var objs = m.getModuleObjs();
+        var moduleObj;
+        var i;
+        
+        for (i=2; i<objs.length; i++) {
+            moduleObj = objs[i];
+            moduleObj.setSelected(false);
+        }
+    }
+    
     this.selectObjects = function(internalPixel) {
         var objs = m.getModuleObjs();
         var moduleObj;
@@ -503,6 +624,10 @@ function CpuSimEditor()
         obj.addClass('active');
         editMode = parseInt(obj.attr('editMode'));
         
+        if (editMode==EDIT_MODE_SELECT) {
+            this.deSelectObjects();
+        }
+        
         if (editMode==EDIT_MODE_WIRE) {
             wireStart.reset();
             wireStop.reset();
@@ -552,6 +677,9 @@ function CpuSimEditor()
     }
     
     this.mouseMove = function(internalPixel) {
+        
+        inTriangle = internalPixel.isInTriangle(a, b, c);
+        
     }
     
     this.zoomChanged = function() {

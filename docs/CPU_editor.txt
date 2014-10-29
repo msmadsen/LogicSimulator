@@ -13,3 +13,11 @@ Logic Editor:
         
 TODO:
     - w modulach ktore zrobilem (moduleAnd etc) dodac metody ktore dodalem
+    - w kazdym obiekie bazowym (przerzutnik bramka i module 
+      (ktory udaje przeciez bazowy)) dodac metody do obslugi pozycji pinow
+
+      
+Pomysl:
+    - moze zrobic modul, ktory wysyla sygnalem radiowym wartosc binarna? :)
+    - eter niech bedzie z zakluceniami a co :D
+    

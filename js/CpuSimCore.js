@@ -2,6 +2,7 @@ var SIM_FLAG_NON_STABLE = false;
 var SIM_FLAG_FLOATING_WIRE = false;
 var SIM_NON_STABLE_MAX = 10;
 var SIM_FLOATING_WIRE_MAX = 10;
+var PIN_SIZE = 6;
 var DEBUG_INDENT = "    ";
 var execTimeStart = new Date().getTime();
 
@@ -16,15 +17,6 @@ function Vector2d(_x, _y)
     var x = (typeof(_x)==='undefined') ? 0.0 : parseFloat(_x);
     var y = (typeof(_y)==='undefined') ? 0.0 : parseFloat(_y);
 
-    this.isInRect = function(rectTL, rectWH) {
-        var tmp;
-        if ( ! (rectTL.getX()<this.getX() && rectTL.getY()<this.getY()))
-            return false;
-        tmp = rectTL.add(rectWH);
-        if ( ! (this.getX()<tmp.getX() && this.getY()<tmp.getY()))
-            return false; 
-       return true;
-    }
     this.getIntX = function() { return Math.round(x); }
     this.getIntY = function() { return Math.round(y); }
     this.getFormatedX = function() { return helperNumberFormat(x, 2, '.', ' ') }
@@ -83,6 +75,44 @@ function Vector2d(_x, _y)
     this.unitAngle = function(angle) {
         x = Math.sin(angle*(Math.PI/180.0));
         y = -Math.cos(angle*(Math.PI/180.0));
+    }
+
+    this.isInTriangle = function(A, B, C) {
+        // code from: http://www.blackpawn.com/texts/pointinpoly/default.html
+        var v0, v1, v2;
+        var dot00, dot01, dot02, dot11, dot12;
+        var invDenom;
+        var u, v;
+
+        // Compute vectors
+        v0 = C.sub(A);
+        v1 = B.sub(A);
+        v2 = this.sub(A);
+
+        // Compute dot products
+        dot00 = v0.dot(v0);
+        dot01 = v0.dot(v1);
+        dot02 = v0.dot(v2);
+        dot11 = v1.dot(v1);
+        dot12 = v1.dot(v2);
+
+        // Compute barycentric coordinates
+        invDenom = 1.0 / (dot00 * dot11 - dot01 * dot01);
+        u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+        v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+        // Check if point is in triangle
+        return (u >= 0.0) && (v >= 0.0) && (u + v < 1.0);
+    }
+    
+    this.isInRect = function(rectTL, rectWH) {
+        var tmp;
+        if ( ! (rectTL.getX()<this.getX() && rectTL.getY()<this.getY()))
+            return false;
+        tmp = rectTL.add(rectWH);
+        if ( ! (this.getX()<tmp.getX() && this.getY()<tmp.getY()))
+            return false; 
+       return true;
     }
     
     this.toString = function() {
@@ -235,6 +265,94 @@ function CombinationalBase()
         var indent = helperGenerateBits(depth, DEBUG_INDENT);
         return indent+'['+__c.getObjClass()+'] in: '+atInputData+', out: '+atOutputData+', nonStableCount: '+nonStableCount+', floatingWireCount: '+floatingWireCount+', isReadyToPropagate: '+(__c.isReadyToPropagate() ? 'yes' : 'no');
     }
+    this.setupBitsNESWLocations = function(__c) {
+        var i, j;
+        var arrNESWLoc;
+        var arrBitLoc;
+        var s, hs;
+        var pin = new Vector2d();
+        var a = new Vector2d();
+        var b = new Vector2d();
+        var c = new Vector2d();
+
+        s = __c.getSize();
+        hs = s.mul(0.5);
+
+        for (j=0; j<2; j++) {
+            
+            // choose input/output
+            switch (j) {
+                case 0: arrNESWLoc = __c.getInputBitsNESWLocations();
+                        arrBitLoc = __c.getInputBitsLocations();
+                        break;
+                case 1: arrNESWLoc = __c.getOutputBitsNESWLocations();
+                        arrBitLoc = __c.getOutputBitsLocations();
+                        break;
+            }
+            
+            for (i=0; i<arrBitLoc.length; i++) {
+                pin.setX( arrBitLoc[i].getX() + PIN_SIZE*0.5 );
+                pin.setY( arrBitLoc[i].getY() + PIN_SIZE*0.5 );
+
+                // N
+                a.setX(0.0);       a.setY(0.0);
+                b.setX(s.getX());  b.setY(0.0);
+                c.setX(hs.getX()); c.setY(hs.getY());
+                if (pin.isInTriangle(a, b, c)) {
+                    arrNESWLoc.push(0);
+                    continue;
+                }
+
+                // E
+                a.setX(s.getX());  a.setY(0.0);
+                b.setX(s.getX());  b.setY(s.getY());
+                c.setX(hs.getX()); c.setY(hs.getY());
+                if (pin.isInTriangle(a, b, c)) {
+                    arrNESWLoc.push(1);
+                    continue;
+                }
+
+                // S
+                a.setX(0.0);       a.setY(s.getY());
+                b.setX(s.getX());  b.setY(s.getY());
+                c.setX(hs.getX()); c.setY(hs.getY());
+                if (pin.isInTriangle(a, b, c)) {
+                    arrNESWLoc.push(2);
+                    continue;
+                }
+
+                // W
+                a.setX(0.0);       a.setY(0.0);
+                b.setX(0.0);       b.setY(s.getY());
+                c.setX(hs.getX()); c.setY(hs.getY());
+                if (pin.isInTriangle(a, b, c)) {
+                    arrNESWLoc.push(3);
+                    continue;
+                }
+                
+                // default is N
+                arrNESWLoc.push(0);
+            }
+        }
+    }
+    this.setupBitsTmpCoordinates = function(__c) {
+        var i;
+        var arrBitsTmpCoord;
+        
+        // generate place (create Vec objects) for input bits tmp coordinates
+        arrBitsTmpCoord = __c.getInputBitsTmpCoordinates();
+        for (i=0; i<__c.getInputBitsCount(); i++) {
+            arrBitsTmpCoord.push(new Vector2d());      // pin loc
+            arrBitsTmpCoord.push(new Vector2d());      // pin NESW loc
+        }
+        
+        // generate place (create Vec objects) for output bits tmp coordinates
+        arrBitsTmpCoord = __c.getOutputBitsTmpCoordinates();
+        for (i=0; i<__c.getOutputBitsCount(); i++) {
+            arrBitsTmpCoord.push(new Vector2d());      // pin loc
+            arrBitsTmpCoord.push(new Vector2d());      // pin NESW loc
+        }
+    }
 }
 
 function GateNand()
@@ -246,6 +364,10 @@ function GateNand()
     var size = new Vector2d(50.0, 50.0);
     var inputBitsLocations = new Array();
     var outputBitsLocations = new Array();
+    var inputBitsTmpCoordinates = new Array();
+    var outputBitsTmpCoordinates = new Array();
+    var inputBitsNESWLocations = new Array();
+    var outputBitsNESWLocations = new Array();
     
     inputBitsLocations.push( new Vector2d(0, 14) );
     inputBitsLocations.push( new Vector2d(0, 30) );
@@ -254,6 +376,10 @@ function GateNand()
     this.getSize = function() { return size; }
     this.getInputBitsLocations = function() { return inputBitsLocations; }
     this.getOutputBitsLocations = function() { return outputBitsLocations; }
+    this.getInputBitsTmpCoordinates = function() { return inputBitsTmpCoordinates; }
+    this.getOutputBitsTmpCoordinates = function() { return outputBitsTmpCoordinates; }
+    this.getInputBitsNESWLocations = function() { return inputBitsNESWLocations; }
+    this.getOutputBitsNESWLocations = function() { return outputBitsNESWLocations; }
     this.isReadyToPropagate = function() {
         var atInputData = __b.getAtInputData();
         if (atInputData.length==0)
@@ -287,10 +413,18 @@ function GateNand()
     this.resetPropagateState = function() { __b.resetPropagateState(this); }
     this.setInputData = function(bits, bitStart) { __b.setInputData(this, bits, bitStart); }
     this.getOutputData = function() { return __b.getOutputData(this); }
-    this.clockFallingEdge = function() { /* nothing */ }
+    this.clockFallingEdge = function() { }
     this.debug = function(depth) { return __b.debug(this, depth); }
+    this.setupBitsNESWLocations = function() { __b.setupBitsNESWLocations(this); }
+    this.setupBitsTmpCoordinates = function() { __b.setupBitsTmpCoordinates(this); }
+    
+    this.setupBitsNESWLocations();
+    this.setupBitsTmpCoordinates();
 }
 
+/*
+ * TODO:
+ *  add sizes and pin locations and computed tmp pin coordinates
 function FullAdder()
 {
     var __b = new CombinationalBase();
@@ -348,8 +482,6 @@ function FullAdder()
     this.debug = function(depth) { return __b.debug(this, depth); }
 }
 
-/*
- * add sizes and pin locations
 function Adder8bit()
 {
     var BITS = 8;
@@ -486,6 +618,9 @@ function Adder24bit()
  *  Generic memory logic
  */
 
+/*
+ * TODO:
+ *  add sizes and pin locations and computed tmp pin coordinates
 function DFlipFlopBase()
 {
     var savedData = "_init_me_";
@@ -597,6 +732,7 @@ function Register8Bit()
     this.clockFallingEdge = function() { __b.clockFallingEdge(this); }
     this.debug = function(depth) { return __b.debug(this, depth); }
 }
+*/
 
 
 
@@ -1062,6 +1198,9 @@ function Module()
  *  Basic modules
  */
 
+/*
+ * TODO
+ *   get module code and create real projects in editor
 function ModuleGateAnd()
 {
     var box = new Module();
@@ -1396,6 +1535,5 @@ function ModuleDLatch()
     this.clockFallingEdge = function() { box.clockFallingEdge(); }
     this.debug = function(depth) { return box.debug(depth); }
 }
-
-
+*/
 
