@@ -11,6 +11,44 @@ var EDIT_MODE_NAND = 3;
 var EDIT_MODE_WIRE = 4;
 
 
+function CpuSimEditorPinStatus()
+{
+    var moduleObjIndex = null;
+    var isInput = null;
+    var pinIndex = null;
+    
+    this.reset = function() {
+        moduleObjIndex = null;
+        isInput = null;
+        pinIndex = null;
+    }
+    this.setModuleObjIndex = function(i) { moduleObjIndex = i; }
+    this.setIsInput = function(i) { isInput = i; }
+    this.setPinIndex = function(i) { pinIndex = i; }
+    this.getModuleObjIndex = function() { return moduleObjIndex; }
+    this.getIsInput = function() { return isInput; }
+    this.getPinIndex = function() { return pinIndex; }
+}    
+
+function CpuSimEditorClickStatus()
+{
+    var clicked = false;
+    var inPinIndex = null;
+    var outPinIndex = null;
+    
+    this.reset = function() {
+        clicked = false;
+        inPinIndex = null;
+        outPinIndex = null;
+    }
+    this.setClicked = function(c) { clicked = c; }
+    this.setInPinIndex = function(i) { inPinIndex = i; }
+    this.setOutPinIndex = function(i) { outPinIndex = i; }
+    this.getClicked = function() { return clicked; }
+    this.getInPinIndex = function() { return inPinIndex; }
+    this.getOutPinIndex = function() { return outPinIndex; }
+}    
+
 
 function CpuSimEditorCoordinates()
 {
@@ -77,8 +115,8 @@ function CpuSimEditor()
     var editMode = null;
     var m = new Module();
     var pix = null;
-    var selectedObj = new Array();
-    
+    var wireStart = new CpuSimEditorPinStatus();
+    var wireStop = new CpuSimEditorPinStatus();
     
     this.redrawStart = function() {
         var fps;
@@ -119,6 +157,27 @@ function CpuSimEditor()
         console.log('Benchmark - dodano: '+i);
     }
     
+    this.getInternalModuleObj = function(moduleObj, objXY, objDim) {
+        var p, s;
+        var obj;
+        
+        obj = moduleObj.getObj();
+        p = moduleObj.getPos();
+        s = obj.getSize();
+        
+        objXY.setX( p.getX() );
+        objXY.setY( p.getY() );
+        objDim.setX( s.getX() );
+        objDim.setY( s.getY() );
+    }
+    
+    this.getInternalModuleObjPin = function(objXY, pin, pinXY, pinDim) { 
+        pinXY.setX( objXY.getX() + pin.getX() );
+        pinXY.setY( objXY.getY() + pin.getY() );
+        pinDim.setX( PIN_SIZE );
+        pinDim.setY( PIN_SIZE );
+    }
+    
     this.getCanvasModuleObj = function(moduleObj, objXY, objDim) {
         var p, s;
         var obj;
@@ -129,68 +188,122 @@ function CpuSimEditor()
         s = obj.getSize();
         
         tmp = cpuSimEditorCoordinates.toCanvas(p);
-        objXY.setX(tmp.getX());
-        objXY.setY(tmp.getY());
+        objXY.setX( tmp.getX() );
+        objXY.setY( tmp.getY() );
         objDim.setX( cpuSimEditorCoordinates.toCanvasUnit(s.getX()) );
         objDim.setY( cpuSimEditorCoordinates.toCanvasUnit(s.getY()) );
     }
     
-    this.__renderInCanvas = function(unique, moduleObj, obj, ctx) {
-        var canvasPix;
-        var w, h, x, y;
+    this.getCanvasModuleObjPin = function(objXY, pin, pinXY, pinDim) { 
+        pinXY.setX( objXY.getX() + cpuSimEditorCoordinates.toCanvasUnit( pin.getX() ) );
+        pinXY.setY( objXY.getY() + cpuSimEditorCoordinates.toCanvasUnit( pin.getY() ) );
+        pinDim.setX( cpuSimEditorCoordinates.toCanvasUnit( PIN_SIZE ) );
+        pinDim.setY( cpuSimEditorCoordinates.toCanvasUnit( PIN_SIZE ) );
+    }
+    
+    this.__renderInCanvasGatesAndModules = function(moduleObj, moduleObjIndex, ctx) {
+        var obj;
         var objXY = new Vector2d();
         var objDim = new Vector2d();
-        var pinX, pinY, pin;
+        var pinXY = new Vector2d();
+        var pinDim = new Vector2d();
         var pinArr;
         var i;
-        var p, s;
+        var image;
         
-        /*
-        p = moduleObj.getPos();
-        s = obj.getSize();
-        */
-        
-        this.getCanvasModuleObj(moduleObj, objXY, objDim);
-        /*
-        canvasPix = cpuSimEditorCoordinates.toCanvas(p);
-        x = canvasPix.getX();
-        y = canvasPix.getY();
-        w = cpuSimEditorCoordinates.toCanvasUnit(s.getX());
-        h = cpuSimEditorCoordinates.toCanvasUnit(s.getY());
-        */
-        
-        // draw gate
-        ctx.drawImage(document.getElementById('gate-nand'), objXY.getX(), objXY.getY(), objDim.getX(), objDim.getY());
+        obj = moduleObj.getObj();
 
+        // draw gate
+        this.getCanvasModuleObj(moduleObj, objXY, objDim);
+        if (moduleObj.getSelected())
+            image = document.getElementById('gate-nand-s'); else
+            image = document.getElementById('gate-nand');
+        ctx.drawImage(image, objXY.getX(), objXY.getY(), objDim.getX(), objDim.getY());
+
+        // draw input pins
         pinArr = obj.getInputBitsLocations();
         for (i=0; i<pinArr.length; i++) {
-            pinX = x + cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getX() );
-            pinY = y + cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getY() );
-            pin = cpuSimEditorCoordinates.toCanvasUnit( PIN_SIZE );
+            this.getCanvasModuleObjPin(objXY, pinArr[i], pinXY, pinDim);    
             
-            ctx.drawImage(document.getElementById('pin-input'), pinX, pinY, pin, pin);
+            // wire active test
+            if ( (wireStart.getModuleObjIndex()===moduleObjIndex && wireStart.getIsInput()===true && wireStart.getPinIndex()===i) || 
+                 (wireStop.getModuleObjIndex()===moduleObjIndex && wireStop.getIsInput()===true && wireStop.getPinIndex()===i) )
+                image = document.getElementById('pin-input-s'); else
+                image = document.getElementById('pin-input');
+        
+            ctx.drawImage(image, pinXY.getX(), pinXY.getY(), pinDim.getX(), pinDim.getY());
         }
+        
+        // draw output pins
         pinArr = obj.getOutputBitsLocations();
         for (i=0; i<pinArr.length; i++) {
-            pinX = x + cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getX() );
-            pinY = y + cpuSimEditorCoordinates.toCanvasUnit( pinArr[i].getY() );
-            pin = cpuSimEditorCoordinates.toCanvasUnit( PIN_SIZE );
+            this.getCanvasModuleObjPin(objXY, pinArr[i], pinXY, pinDim);    
+            
+            // wire active test
+            if ( (wireStart.getModuleObjIndex()===moduleObjIndex && wireStart.getIsInput()===false && wireStart.getPinIndex()===i) ||
+                 (wireStop.getModuleObjIndex()===moduleObjIndex && wireStop.getIsInput()===false && wireStop.getPinIndex()===i) )
+                image = document.getElementById('pin-output-s'); else
+                image = document.getElementById('pin-output');
 
-            ctx.drawImage(document.getElementById('pin-output'), pinX, pinY, pin, pin);
+            ctx.drawImage(image, pinXY.getX(), pinXY.getY(), pinDim.getX(), pinDim.getY());
         }
     }
     
-    this.setPix = function(ctx, r, g, b, a) {
-        var pixRGBA;
+    this.__renderInCanvasConnections = function(moduleObj, moduleObjIndex, ctx) {
+        var obj;
+        var pinXY = new Vector2d();
+        var pinDim = new Vector2d();
+        var pinArr;
+        var i;
         
-        if (pix===null)
-            pix = ctx.createImageData(1,1);
+        obj = moduleObj.getObj();
+
+        // draw output pins
+        pinArr = obj.getOutputBitsLocations();
+        for (i=0; i<pinArr.length; i++) {
+            //this.getCanvasModuleObjPin(objXY, pinArr[i], pinXY, pinDim);    
+        }
         
-        pixRGBA  = pix.data;
-        pixRGBA[0] = r;
-        pixRGBA[1] = g;
-        pixRGBA[2] = b;
-        pixRGBA[3] = a;
+        /*
+        moduleObjs[i].connOutIteratorReset();
+        while ((connIdx=moduleObjs[i].connOutIteratorGetNext())!==null) {
+            subDataBits = dataBits.toString().substr(moduleConns[connIdx].getObjA_bitStart(), moduleConns[connIdx].getObjA_bitLen());
+
+            if (moduleConns[connIdx].getObjB_index()!=1) {
+                moduleObjs[moduleConns[connIdx].getObjB_index()].getObj().setInputData(subDataBits, moduleConns[connIdx].getObjB_bitStart());
+            } else {
+                // output
+                for (j=0; j<moduleConns[connIdx].getObjB_bitLen(); j++) {
+                    atOutputData = atOutputData.replaceAt(moduleConns[connIdx].getObjB_bitStart()+j, subDataBits[j]);
+                }
+            }
+        }
+        */
+    }
+    
+    this.render = function() {
+        var objs = m.getModuleObjs();
+        var i;
+        var moduleObj;
+        var canvas, ctx;
+        
+
+        canvas = document.getElementById('sim-window-canvas');
+        ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        this.__renderGrid(ctx);
+        
+        // render gates and modules
+        for (i=2; i<objs.length; i++) {
+            moduleObj = objs[i];
+            this.__renderInCanvasGatesAndModules(moduleObj, i, ctx);
+        }
+        
+        // render connections
+        for (i=2; i<objs.length; i++) {
+            moduleObj = objs[i];
+            this.__renderInCanvasConnections(moduleObj, i, ctx);
+        }
     }
     
     this.__renderGrid = function(ctx) {
@@ -236,38 +349,19 @@ function CpuSimEditor()
             ctx.closePath();
             ctx.stroke();
         }
-        
-        /*
-        this.setPix(ctx, 255, 255, 0, 255);
-        for (y=-100; y<=100; y+=10) {
-            for (x=-100; x<=100; x+=10) {
-                xyVec.setX(x);
-                xyVec.setY(y);
-                //xyVec = cpuSimEditorCoordinates.toCanvas(xyVec);
-                //ctx.putImageData(pix, xyVec.getX(), xyVec.getY());
-            }
-        }
-        */
     }
     
-    this.render = function() {
-        var objs = m.getModuleObjs();
-        var i;
-        var unique, moduleObj, obj;
-        var canvas, ctx;
+    this.setPix = function(ctx, r, g, b, a) {
+        var pixRGBA;
         
-
-        canvas = document.getElementById('sim-window-canvas');
-        ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        this.__renderGrid(ctx);
+        if (pix===null)
+            pix = ctx.createImageData(1,1);
         
-        for (i=2; i<objs.length; i++) {
-            unique = objs[i].getName();
-            moduleObj = objs[i];
-            obj = moduleObj.getObj();
-            this.__renderInCanvas(unique, moduleObj, obj, ctx);
-        }
+        pixRGBA  = pix.data;
+        pixRGBA[0] = r;
+        pixRGBA[1] = g;
+        pixRGBA[2] = b;
+        pixRGBA[3] = a;
     }
     
     this.addObject = function(internalPixel, type) {
@@ -284,17 +378,123 @@ function CpuSimEditor()
         moduleObj.setPos(internalPixel);
     }
     
-    this.selectObject = function(internalPixel) {
-        var objs = m.getModuleObjs();
+    this.clickCheck = function(moduleObj, internalPixel, clickStatus) {
+        var obj;
+        var objXY = new Vector2d();
+        var objDim = new Vector2d();
+        var pinXY = new Vector2d();
+        var pinDim = new Vector2d();
+        var pinArr;
         var i;
         
+        obj = moduleObj.getObj();
+        clickStatus.reset();
         
+        this.getInternalModuleObj(moduleObj, objXY, objDim);
+        if ( ! internalPixel.isInRect(objXY, objDim))
+            return;
+        
+        clickStatus.setClicked(true);
+
+        // input pins
+        pinArr = obj.getInputBitsLocations();
+        for (i=0; i<pinArr.length; i++) {
+            this.getInternalModuleObjPin(objXY, pinArr[i], pinXY, pinDim);            
+            if (internalPixel.isInRect(pinXY, pinDim)) {
+                clickStatus.setInPinIndex(i);
+                break;
+            }
+        }
+        
+        // output pins
+        pinArr = obj.getOutputBitsLocations();
+        for (i=0; i<pinArr.length; i++) {
+            this.getInternalModuleObjPin(objXY, pinArr[i], pinXY, pinDim);
+            if (internalPixel.isInRect(pinXY, pinDim)) {
+                clickStatus.setOutPinIndex(i);
+                break;
+            }
+        }
+    }
+    
+    this.selectObjects = function(internalPixel) {
+        var objs = m.getModuleObjs();
+        var moduleObj;
+        var i;
+        var clickStatus = new CpuSimEditorClickStatus();
         
         for (i=2; i<objs.length; i++) {
-            unique = objs[i].getName();
             moduleObj = objs[i];
-            obj = moduleObj.getObj();
-            this.__renderInCanvas(unique, moduleObj, obj, ctx);
+            this.clickCheck(moduleObj, internalPixel, clickStatus);
+            if (clickStatus.getClicked()) {
+                moduleObj.setSelected( (moduleObj.getSelected()==true) ? false : true );
+            }
+        }
+    }
+    
+    this.wireObjects = function(internalPixel) {
+        var objs = m.getModuleObjs();
+        var moduleObj;
+        var i;
+        var clickStatus = new CpuSimEditorClickStatus();
+        var pinStatus = new CpuSimEditorPinStatus();
+        var readyToWire = false;
+        
+        for (i=2; i<objs.length; i++) {
+            moduleObj = objs[i];
+            this.clickCheck(moduleObj, internalPixel, clickStatus);
+            if (clickStatus.getClicked()) {
+                if (clickStatus.getInPinIndex()!==null) {
+                    pinStatus.setModuleObjIndex(i);
+                    pinStatus.setIsInput(true);
+                    pinStatus.setPinIndex(clickStatus.getInPinIndex());
+                    break;
+                }
+                if (clickStatus.getOutPinIndex()!==null) {
+                    pinStatus.setModuleObjIndex(i);
+                    pinStatus.setIsInput(false);
+                    pinStatus.setPinIndex(clickStatus.getOutPinIndex());
+                    break;
+                }
+            }
+        }
+        
+        if (pinStatus.getModuleObjIndex()!==null) {
+            if (wireStart.getModuleObjIndex()===null) {
+                wireStart.setModuleObjIndex( pinStatus.getModuleObjIndex() );
+                wireStart.setIsInput( pinStatus.getIsInput() );
+                wireStart.setPinIndex( pinStatus.getPinIndex() );
+            } else {
+                wireStop.setModuleObjIndex( pinStatus.getModuleObjIndex() );
+                wireStop.setIsInput( pinStatus.getIsInput() );
+                wireStop.setPinIndex( pinStatus.getPinIndex() );
+                readyToWire = true;
+            }
+        }
+        
+        if (readyToWire) {
+            m.addConn(objs[wireStart.getModuleObjIndex()].getName(), objs[wireStop.getModuleObjIndex()].getName(), 
+                      wireStart.getPinIndex(), 1, wireStop.getPinIndex(), 1);
+            wireStart.reset();
+            wireStop.reset();
+        }
+    }
+    
+    this.moveObjects = function(internalDelta, alignToGrid) {
+        var objs = m.getModuleObjs();
+        var moduleObj;
+        var newPos = new Vector2d();
+        var i;
+        
+        for (i=2; i<objs.length; i++) {
+            moduleObj = objs[i];
+            if (moduleObj.getSelected()) {
+                newPos = moduleObj.getPos();
+                if (!alignToGrid)
+                    newPos = newPos.add(internalDelta); else
+                    newPos = cpuSimEditorCoordinates.alignToGrid(newPos);
+                moduleObj.setPos(newPos);
+            }
         }
     }
     
@@ -302,13 +502,27 @@ function CpuSimEditor()
         obj.parent().find('> a').removeClass('active');
         obj.addClass('active');
         editMode = parseInt(obj.attr('editMode'));
+        
+        if (editMode==EDIT_MODE_WIRE) {
+            wireStart.reset();
+            wireStop.reset();
+        }
     }
     
     this.mouseDragLeft = function(internalDelta) {
         switch (editMode) {
             case EDIT_MODE_SELECT: 
                                      break;
-            case EDIT_MODE_MOVE:     
+            case EDIT_MODE_MOVE:     this.moveObjects(internalDelta, false);
+                                     break;
+        }
+    }
+    
+    this.mouseDragLeftStop = function(internalPixel) {
+        switch (editMode) {
+            case EDIT_MODE_SELECT: 
+                                     break;
+            case EDIT_MODE_MOVE:     this.moveObjects(new Vector2d(), true);
                                      break;
         }
     }
@@ -317,12 +531,19 @@ function CpuSimEditor()
         cpuSimEditorCoordinates.viewCenterMove(internalDelta);
     }
     
+    this.mouseDragRightStop = function(internalPixel) {
+        
+    }
+    
     this.mouseLeftClick = function(internalPixel) {
         switch (editMode) {
             case EDIT_MODE_INTERACT: 
                                      break;
-            case EDIT_MODE_SELECT:   this.selectObject(internalPixel);
+            case EDIT_MODE_SELECT:   this.selectObjects(internalPixel);
+                                     break;
             case EDIT_MODE_NAND:     this.addObject(internalPixel, 'GateNand');
+                                     break;
+            case EDIT_MODE_WIRE:     this.wireObjects(internalPixel);
                                      break;
         }
     }
@@ -334,7 +555,6 @@ function CpuSimEditor()
     }
     
     this.zoomChanged = function() {
-        //this.render();
     }
 }
 

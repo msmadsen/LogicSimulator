@@ -127,11 +127,13 @@ function setupCpuSimWindowMouseEvents()
         internalPixel = cpuSimEditorCoordinates.toInternal(canvasPixel);        
         switch (e.which) {
             case 1: dragLeft = false;
+                    cpuSimEditor.mouseDragLeftStop(internalPixel);
                     if (Math.abs(deltaX)<2 && Math.abs(deltaY)<2) {
                         cpuSimEditor.mouseLeftClick(internalPixel);
                     }
                     break;
             case 3: dragRight = false;
+                    cpuSimEditor.mouseDragRightStop(internalPixel);
                     if (Math.abs(deltaX)<2 && Math.abs(deltaY)<2) {
                         cpuSimEditor.mouseRightClick(internalPixel);
                     }
@@ -154,7 +156,7 @@ function setupCpuSimWindowMouseEvents()
 
 
 
-$(document).ready(function () {
+$(window).load(function () {
 
     $(document).bind("contextmenu", function(e) {
         return false;

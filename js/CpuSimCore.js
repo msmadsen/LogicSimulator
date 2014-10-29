@@ -16,6 +16,15 @@ function Vector2d(_x, _y)
     var x = (typeof(_x)==='undefined') ? 0.0 : parseFloat(_x);
     var y = (typeof(_y)==='undefined') ? 0.0 : parseFloat(_y);
 
+    this.isInRect = function(rectTL, rectWH) {
+        var tmp;
+        if ( ! (rectTL.getX()<this.getX() && rectTL.getY()<this.getY()))
+            return false;
+        tmp = rectTL.add(rectWH);
+        if ( ! (this.getX()<tmp.getX() && this.getY()<tmp.getY()))
+            return false; 
+       return true;
+    }
     this.getIntX = function() { return Math.round(x); }
     this.getIntY = function() { return Math.round(y); }
     this.getFormatedX = function() { return helperNumberFormat(x, 2, '.', ' ') }
@@ -600,6 +609,7 @@ function ModuleObj()
     var obj = null;
     var name = "";
     var pos = new Vector2d();
+    var selected = false;
     var connInBitsCount = "_not_conn_";
     var connIn = new Array();
     var connInIterator = 0;
@@ -616,6 +626,8 @@ function ModuleObj()
     this.getName = function() { return name; }
     this.setPos = function(p) { pos = p; }
     this.getPos = function() { return pos; }
+    this.setSelected = function(s) { selected = s; }
+    this.getSelected = function() { return selected; }
     this.getConnInCount = function() { return connIn.length; }
     this.getConnInBitsCount = function() { return connInBitsCount; }
     this.addConnIn = function(__c, connIdx) {
@@ -766,13 +778,6 @@ function Module()
         if (tmpIdx===null)
             return null;
         return moduleObjs[tmpIdx];
-    }
-    this.moveModuleObj = function(name, newPos) {                  // editor API
-        var obj;
-        
-        obj = this.getModuleObj(name);
-        if (obj!==null)
-            obj.setPos(newPos);
     }
     this.addConn = function(objA_name, objB_name,                  // editor API
                             objA_bitStart, objA_bitLen, 
