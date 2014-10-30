@@ -11,6 +11,8 @@ var EDIT_MODE_WIRE = 6;
 var EDIT_MODE_WIRELINK = 7;
 var EDIT_MODE_OUTPUT = 8;
 var EDIT_MODE_CLOCK = 9;
+var EDIT_MODE_HIGH = 10;
+var EDIT_MODE_LOW = 11;
 
 var SIM_SHOW_REAL_DEVICES = true;
 var SIM_IS_RUNNING = false;
@@ -299,9 +301,6 @@ function CpuSimEditor()
         oSta = obj.getState();
         oRot = moduleObj.getRotation();
         
-        if (oTyp=='Clock')
-            oTyp = 'Input';
-        
         if (oTyp=='GateNand') {
             if (SIM_SHOW_REAL_DEVICES) {
                 oTyp = 'RealGateNand';
@@ -312,6 +311,8 @@ function CpuSimEditor()
         
         image = document.getElementById(oTyp+'_sel-'+oSel+'_state-'+oSta+'_rot-'+oRot);
         
+        if (!image)
+            console.log( oTyp+'_sel-'+oSel+'_state-'+oSta+'_rot-'+oRot );
         ctx.drawImage(image, objXY.getX(), objXY.getY(), objDim.getX(), objDim.getY());
 
         // draw input pins
@@ -755,6 +756,10 @@ function CpuSimEditor()
             case EDIT_MODE_OUTPUT:   this.addObject(internalPixel, 'Output');
                                      break;
             case EDIT_MODE_CLOCK:    this.addObject(internalPixel, 'Clock');
+                                     break;
+            case EDIT_MODE_HIGH:     this.addObject(internalPixel, 'High');
+                                     break;
+            case EDIT_MODE_LOW:      this.addObject(internalPixel, 'Low');
                                      break;
         }
     }

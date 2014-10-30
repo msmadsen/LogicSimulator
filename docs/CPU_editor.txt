@@ -48,9 +48,20 @@ TODO aktualne:
     // NA PIERWSZY OGIEN   !!!!!!!!!!!      ------------------
     + nowy model symulacji
     + dodanie obiektu CLOCK
-    - dodanie obiektu input HIGHT, LOW
+    + dodanie obiektu input HIGHT, LOW
     - symulacja ustalic wszystkie tryby (uwzglednic: stan 0 dla braku zasilania, dodac stan goingTo, flaga stanu sym braku zasilania/pokazywania real)
+        P A B
+        0 0 0 stan 0
+        1 0 0 stan 1
+        1 0 1 stan 2
+        1 1 0 stan 3
+        1 1 1 stan 4
+        ex.
+        state 0 going to 2
+        state 2 going to 0
+
     - obrazki dla wszystkich typow bramek, rotacji i stanow wewnetrznych
+    - inna sciezka dla B i troche w prawo
     // NA PIERWSZY OGIEN   !!!!!!!!!!!      ------------------
 
     

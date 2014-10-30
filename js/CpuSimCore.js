@@ -1,6 +1,6 @@
 var SIM_FLAG_NON_STABLE = false;
 var PIN_SIZE = 8;
-var SIM_SWITCH_DELAY = 2000;                                        // ms
+var SIM_SWITCH_DELAY = 100;                                         // ms
 var SIM_CLOCK_FREQUENCY = 0.2;                                      // Hz
 var SIM_CLOCK_HALFCYCLE_TIME = (1000.0/SIM_CLOCK_FREQUENCY) / 2.0;  // ms
 var DEBUG_INDENT = "    ";
@@ -11,7 +11,7 @@ var OBJ_INPUT = 1;
 var OBJ_OUTPUT = 2;
 var OBJ_WIRELINK = 3;
 var OBJ_CLOCK = 4;
-var OBJ_HIGHT = 5;
+var OBJ_HIGH = 5;
 var OBJ_LOW = 6;
 
 
@@ -406,7 +406,7 @@ function CombinationalBase()
             case OBJ_OUTPUT:   objSpec = new Output(this);    break;
             case OBJ_WIRELINK: objSpec = new WireLink(this);  break;
             case OBJ_CLOCK:    objSpec = new Clock(this);     break;
-            case OBJ_HIGHT:    objSpec = new Hight(this);     break;
+            case OBJ_HIGH:     objSpec = new High(this);     break;
             case OBJ_LOW:      objSpec = new Low(this);       break;
         }
         
@@ -418,7 +418,7 @@ function CombinationalBase()
     }
     this.getSwitchingTimeProgress = function(now) {
         if (now>=switchingTimeFinish)
-            return 1.0
+            return 1.0;
         if (switchingTimeStart==switchingTimeFinish)
             return 1.0;
         return (now-switchingTimeStart) / (switchingTimeFinish-switchingTimeStart)
@@ -431,7 +431,7 @@ function CombinationalBase()
             case OBJ_OUTPUT:   tmp = objSpec.computeOutput(); break;
             case OBJ_WIRELINK: tmp = objSpec.computeOutput(); break;    
             case OBJ_CLOCK:    tmp = objSpec.computeOutput(); break;
-            case OBJ_HIGHT:    tmp = objSpec.computeOutput(); break;
+            case OBJ_HIGH:     tmp = objSpec.computeOutput(); break;
             case OBJ_LOW:      tmp = objSpec.computeOutput(); break;
         }
         output = tmp;
@@ -591,13 +591,48 @@ function Input(__p)
             p.setState(1);
         p.clearChanged();
     }
-    this.setHight = function() {
+    this.setHigh = function() {
         p.setState(1);
         p.clearChanged();
     }
     this.setLow = function() {
         p.setState(0);
         p.clearChanged();
+    }
+}
+
+
+function High(__p)
+{
+    var p = __p;
+    
+    this.configure = function() {
+        p.setObjClass("High");
+        p.setSize(new Vector2d(32.0, 32.0)); 
+        p.setInputBitsCount(0);
+        p.setOutputBitsCount(1);
+        p.getOutputBitsLocations().push( new Vector2d(24, 12) );
+        p.setState(1);
+    }
+    this.computeOutput = function() {
+        return "1";
+    }
+}
+
+
+function Low(__p)
+{
+    var p = __p;
+    
+    this.configure = function() {
+        p.setObjClass("Low");
+        p.setSize(new Vector2d(32.0, 32.0)); 
+        p.setInputBitsCount(0);
+        p.setOutputBitsCount(1);
+        p.getOutputBitsLocations().push( new Vector2d(24, 12) );
+    }
+    this.computeOutput = function() {
+        return "0";
     }
 }
 
@@ -664,7 +699,7 @@ function Clock(__p)
             p.setState(1);
         p.clearChanged();
     }
-    this.setHight = function() {
+    this.setHigh = function() {
         p.setState(1);
         p.clearChanged();
     }
@@ -710,7 +745,7 @@ function ModuleObj()
             case "Output"   : obj.configureAs(OBJ_OUTPUT); break;
             case "WireLink" : obj.configureAs(OBJ_WIRELINK); break;
             case "Clock"    : obj.configureAs(OBJ_CLOCK); break;
-            case "Hight"    : obj.configureAs(OBJ_HIGHT); break;
+            case "High"     : obj.configureAs(OBJ_HIGH); break;
             case "Low"      : obj.configureAs(OBJ_LOW); break;
         }
     }
