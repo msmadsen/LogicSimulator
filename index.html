@@ -19,6 +19,17 @@
         <link rel="stylesheet" href="css/style.css" />
         <link rel="stylesheet" href="css/OkiWidgets.css" />
 
+        <script>
+            $(document).ready(function() {
+                setTimeout(function() {
+                    cpuSimEditor.quickLoad();
+                    $('#simLoopsPerFrame').val(10);
+                    cpuSimEditor.simParamsUpdate();
+                    cpuSimEditor.simStartStopToogle();
+                }, 1000);
+            });
+        </script>
+        
     </head>
 
     <body>
@@ -37,6 +48,7 @@
                     <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="6">Wire</a>
                     <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="7">Wire link</a>
                     <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="8">Output</a>
+                    <a href="javascript:void(0)" onClick="cpuSimEditor.editingModeChange($(this))" editMode="9">Clock</a>
                     <!--       
                     <a href="javascript:void(0)">AND</a>
                     <a href="javascript:void(0)">OR</a>

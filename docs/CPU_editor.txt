@@ -46,12 +46,14 @@ TODO aktualne:
     + dodanie obiektu output (lampka)
     
     // NA PIERWSZY OGIEN   !!!!!!!!!!!      ------------------
-    - nowy tryb symulacji
+    + nowy model symulacji
     - dodanie obiektu CLOCK
     - dodanie obiektu input HIGHT, LOW
+    - 
     - obrazki dla wszystkich typow bramek, rotacji i stanow wewnetrznych
     // NA PIERWSZY OGIEN   !!!!!!!!!!!      ------------------
 
+    - usunac objectName z obiektow generic (zrobic to w configu i tylko ID to stringa)
     - rotacja paru zaznaczonych wzgledem zbiorczego srodka
     - obiekt RAM (adress, dataIn, dataOut, W/!R) - rozmiar mozna zmieniac z toolboxa jak left/right jak nic nie jest przypiete
     - interface do pamieci [ getAdressWidth() -> [bitsCount in adress]

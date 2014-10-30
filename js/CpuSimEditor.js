@@ -10,6 +10,7 @@ var EDIT_MODE_INPUT = 5;
 var EDIT_MODE_WIRE = 6;
 var EDIT_MODE_WIRELINK = 7;
 var EDIT_MODE_OUTPUT = 8;
+var EDIT_MODE_CLOCK = 9;
 
 var SIM_IS_RUNNING = false;
 var SIM_GATE_DELAY_MODE = 0;
@@ -270,6 +271,8 @@ function CpuSimEditor()
         var pinSizeHalf;
         var switchCol;
         var oTyp, oSel, oRot, oSta;
+        var switchingTimeProgress;
+        var now = (new Date()).getTime();
         
         obj = moduleObj.getObj();
         pinSizeHalf = cpuSimEditorCoordinates.toCanvasUnit( PIN_SIZE * 0.5 );
@@ -278,10 +281,11 @@ function CpuSimEditor()
 
         // draw gate
         this.getCanvasModuleObj(moduleObj, objXY, objDim);
-        if (obj.getSwitchDelay()>0) {
+        switchingTimeProgress = obj.getSwitchingTimeProgress(now);
+        if (switchingTimeProgress<1.0) {
             ctx.beginPath();
             ctx.rect(objXY.getX(), objXY.getY(), objDim.getX(), objDim.getY());
-            switchCol = Math.floor( 255*(obj.getSwitchDelay()/SIM_SWITCH_DELAY) );
+            switchCol = Math.floor( 255*switchingTimeProgress );
             ctx.fillStyle = 'rgb('+switchCol+','+switchCol+',0)';
             ctx.fill();
             ctx.lineWidth = 1;
@@ -293,6 +297,9 @@ function CpuSimEditor()
         oSel = moduleObj.getSelected();
         oSta = obj.getState();
         oRot = moduleObj.getRotation();
+        
+        if (oTyp=='Clock')
+            oTyp = 'Input';
         
         image = document.getElementById(oTyp+'_sel-'+oSel+'_state-'+oSta+'_rot-'+oRot);
         
@@ -639,8 +646,10 @@ function CpuSimEditor()
                       wireStart.getPinIndex(), wireStop.getPinIndex());
             
             // reset propagation state
-            objs[wireStart.getModuleObjIndex()].getObj().reset();
-            objs[wireStop.getModuleObjIndex()].getObj().reset();
+            for (i=0; i<objs.length; i++) {
+                moduleObj = objs[i];
+                moduleObj.getObj().clearChanged();
+            }
                       
             // reset wiring tools state
             wireStart.reset();
@@ -736,6 +745,8 @@ function CpuSimEditor()
                                      break;
             case EDIT_MODE_OUTPUT:   this.addObject(internalPixel, 'Output');
                                      break;
+            case EDIT_MODE_CLOCK:    this.addObject(internalPixel, 'Clock');
+                                     break;
         }
     }
     
@@ -816,7 +827,7 @@ m.addModuleObj('GateNand', '2211259322497383');
 m.getModuleObj('2211259322497383').setPos(new Vector2d(200, 20));
 m.addModuleObj('GateNand', '966836817372005');
 m.getModuleObj('966836817372005').setPos(new Vector2d(270, 20));
-m.addModuleObj('Input', '76162721332051');
+m.addModuleObj('Clock', '76162721332051');
 m.getModuleObj('76162721332051').setPos(new Vector2d(-180, -270));
 m.addModuleObj('GateNand', '2256974917203986');
 m.getModuleObj('2256974917203986').setPos(new Vector2d(150, -150));

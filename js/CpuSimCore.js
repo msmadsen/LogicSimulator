@@ -1,7 +1,9 @@
 var SIM_FLAG_NON_STABLE = false;
 var SIM_NON_STABLE_MAX = 10;
 var PIN_SIZE = 8;
-var SIM_SWITCH_DELAY = 20;
+var SIM_SWITCH_DELAY = 0;                                           // ms
+var SIM_CLOCK_FREQUENCY = 4.0;                                      // Hz
+var SIM_CLOCK_HALFCYCLE_TIME = (1000.0/SIM_CLOCK_FREQUENCY) / 2.0;  // ms
 var DEBUG_INDENT = "    ";
 var execTimeStart = new Date().getTime();
 
@@ -9,6 +11,9 @@ var OBJ_GATENAND = 0;
 var OBJ_INPUT = 1;
 var OBJ_OUTPUT = 2;
 var OBJ_WIRELINK = 3;
+var OBJ_CLOCK = 4;
+var OBJ_HIGHT = 5;
+var OBJ_LOW = 6;
 
 
 /**
@@ -373,10 +378,11 @@ function CombinationalBase()
     var output;
     var outputPrevoius;
     var changed;
+    var switchingTimeStart;    // in ms
+    var switchingTimeFinish;   // in ms
     // --------
     var savedData = null;       // for memory?
     var state = 0;
-    var switchDelay = 0;
     var objSpec = null;
     var objClass = "";
     var objClassCode = -1;
@@ -400,6 +406,9 @@ function CombinationalBase()
             case OBJ_INPUT:    objSpec = new Input(this);     break;
             case OBJ_OUTPUT:   objSpec = new Output(this);    break;
             case OBJ_WIRELINK: objSpec = new WireLink(this);  break;
+            case OBJ_CLOCK:    objSpec = new Clock(this);     break;
+            case OBJ_HIGHT:    objSpec = new Hight(this);     break;
+            case OBJ_LOW:      objSpec = new Low(this);       break;
         }
         
         objSpec.configure();
@@ -408,9 +417,74 @@ function CombinationalBase()
         helperSetupBitsNESWLocations(this);
         helperSetupBitsTmpCoordinates(this);
     }
+    this.getSwitchingTimeProgress = function(now) {
+        if (now>=switchingTimeFinish)
+            return 1.0
+        if (switchingTimeStart==switchingTimeFinish)
+            return 1.0;
+        return (now-switchingTimeStart) / (switchingTimeFinish-switchingTimeStart)
+    }
+    this._computeOutput = function() {
+        var tmp = "";
+        switch (objClassCode) {
+            case OBJ_GATENAND: tmp = objSpec.computeOutput(); break;
+            case OBJ_INPUT:    tmp = objSpec.computeOutput(); break;
+            case OBJ_OUTPUT:   tmp = objSpec.computeOutput(); break;
+            case OBJ_WIRELINK: tmp = objSpec.computeOutput(); break;    
+            case OBJ_CLOCK:    tmp = objSpec.computeOutput(); break;
+            case OBJ_HIGHT:    tmp = objSpec.computeOutput(); break;
+            case OBJ_LOW:      tmp = objSpec.computeOutput(); break;
+        }
+        output = tmp;
+    }
+    this.setInput = function(bits, bitStart) {
+        var now = (new Date()).getTime();
+        var switchingTime = 0;
+        var newInputWaiting = inputWaiting;
+        if ((bits.length+bitStart)>this.getInputBitsCount())
+            helperConsole('[ERROR] setInputData too long in '+this.getObjClass());
+        var i;
+        for (i=0; i<bits.length; i++) {
+            newInputWaiting = newInputWaiting.replaceAt(bitStart+i, bits[i]);
+        }
+        
+        if (newInputWaiting!=inputWaiting) {      // new signal at input
+            inputWaiting = newInputWaiting;
+            switch (objClassCode) {
+                case OBJ_GATENAND: switchingTime = SIM_SWITCH_DELAY; break;
+            }
+            switchingTimeStart = now;
+            switchingTimeFinish = now + switchingTime;
+        }
+    }
+    this.timeLapse = function() {
+        var now = (new Date()).getTime();
+        var clockHalfTicksFromPreviousCheck;
+        
+        switch (objClassCode) {
+            case OBJ_CLOCK:    clockHalfTicksFromPreviousCheck = objSpec.getClockHalfTicksFromPreviousCheck(now);
+                               if (clockHalfTicksFromPreviousCheck>=1.0 && clockHalfTicksFromPreviousCheck<2.0) {
+                                   objSpec.toggle();
+                               } else
+                                   if (clockHalfTicksFromPreviousCheck>=2.0) {
+                                       helperConsole("Symulation is too slow to catch clock ticks!!!!! - "+helperNumberFormat(clockHalfTicksFromPreviousCheck, 2, '.', ''));
+                                       //now = 1.0/0.0;                                                              // TODO: better error handling
+                                   }
+                               break;
+        }
+        
+        if (now>=switchingTimeFinish) {
+            input = inputWaiting;
+            this._computeOutput();
+
+            if (output!=outputPrevoius)         // !!! this if speeds up simulation 100x times !!!
+                changed = true;
+            outputPrevoius = output;
+        }
+    }
     this.toggle = function () {
         switch (objClassCode) {
-            case OBJ_INPUT:    objSpec.toogle(); break;
+            case OBJ_INPUT:    objSpec.toggle(); break;
         }
     }
     this.setHeight = function () {
@@ -423,6 +497,11 @@ function CombinationalBase()
             case OBJ_INPUT:    objSpec.setLow(); break;
         }
     }
+    this.getOutput = function() { return output; }
+    this.getInput = function() { return input; }
+    this.getInputWaiting = function() { return inputWaiting; }
+    this.hasChanged = function() { return changed; }
+    this.clearChanged = function() { changed = false; }
     this.getSize = function() { return size; }
     this.setSize = function(s) { size = s; }
     this.getInputBitsLocations = function() { return inputBitsLocations; }
@@ -442,65 +521,18 @@ function CombinationalBase()
     this.getObjClassCode = function() { return objClassCode; }
     this.clockFallingEdge = function() { }
     this.debug = function(depth) {
+        var now = (new Date()).getTime();
         var indent = helperGenerateBits(depth, DEBUG_INDENT);
-        return indent+'['+this.getObjClass()+'] inputWaiting: '+inputWaiting+', input: '+input+', output: '+output+', state: '+state+', switchDelay: '+switchDelay+', changed: '+(changed ? 'yes' : 'no');
+        return indent+'['+this.getObjClass()+'] inputWaiting: '+inputWaiting+', input: '+input+', output: '+output+', state: '+state+', switchingTimeProgress: '+this.getSwitchingTimeProgress(now)+', changed: '+(changed ? 'yes' : 'no');
     }
-    
-    // -- new --
-    this.getSwitchDelay = function() { return switchDelay; }
-    this._computeOutput = function() {
-        var tmp = "";
-        switch (objClassCode) {
-            case OBJ_GATENAND: tmp = objSpec.computeOutput(); break;
-            case OBJ_INPUT:    tmp = objSpec.computeOutput(); break;
-            case OBJ_OUTPUT:   tmp = objSpec.computeOutput(); break;
-            case OBJ_WIRELINK: tmp = objSpec.computeOutput(); break;
-        }
-        output = tmp;
-    }
-    this.setInput = function(bits, bitStart) {
-        var now = (new Date()).getTime();
-        var newInputWaiting = inputWaiting;
-        if ((bits.length+bitStart)>this.getInputBitsCount())
-            helperConsole('[ERROR] setInputData too long in '+this.getObjClass());
-        var i;
-        for (i=0; i<bits.length; i++) {
-            newInputWaiting = newInputWaiting.replaceAt(bitStart+i, bits[i]);
-        }
-        
-        if (newInputWaiting!=inputWaiting) {
-            // new signal
-            inputWaiting = newInputWaiting;
-            switchDelay = SIM_SWITCH_DELAY;
-        } else {
-            // same as previous
-        }
-    }
-    this.timeLapse = function() {
-        var now = (new Date()).getTime();
-        
-        if (switchDelay>0)
-            switchDelay--;
-        
-        if (switchDelay==0) {
-            input = inputWaiting;
-            this._computeOutput();
-
-            if (output!=outputPrevoius)         // !!! this if speeds up simulation 100x times !!!
-                changed = true;
-            outputPrevoius = output;
-        }
-    }
-    this.getOutput = function() { return output; }
-    this.getInput = function() { return input; }
-    this.getInputWaiting = function() { return inputWaiting; }
-    this.hasChanged = function() { return changed; }
-    this.clearChanged = function() { changed = false; }
     this.reset = function() {
+        var now = (new Date()).getTime();
+        
         inputWaiting = helperGenerateBits(inputBitsCount, "?");
         input = inputWaiting;
         outputPrevoius = null;
-        switchDelay = 0;
+        switchingTimeStart = now;
+        switchingTimeFinish = now;
         this._computeOutput();
         changed = true;
     }
@@ -510,7 +542,7 @@ function CombinationalBase()
 function GateNand(__p)
 {
     var p = __p;
-    
+
     this.configure = function() {
         p.setObjClass("GateNand");
         p.setSize(new Vector2d(64.0, 64.0)); 
@@ -552,19 +584,19 @@ function Input(__p)
     this.computeOutput = function() {
         return (p.getState()==1) ? "1" : "0";
     }
-    this.toogle = function() {
+    this.toggle = function() {
         if (p.getState()==1)
             p.setState(0); else
             p.setState(1);
-        p.reset();
+        p.clearChanged();
     }
     this.setHight = function() {
         p.setState(1);
-        p.reset();
+        p.clearChanged();
     }
     this.setLow = function() {
         p.setState(0);
-        p.reset();
+        p.clearChanged();
     }
 }
 
@@ -607,6 +639,49 @@ function WireLink(__p)
 }
 
 
+function Clock(__p)
+{
+    var p = __p;
+    var clockTimeStart;
+    var clockHalfTicksFromPreviousCheck;
+    
+    this.configure = function() {
+        p.setObjClass("Clock");
+        p.setSize(new Vector2d(32.0, 32.0)); 
+        p.setInputBitsCount(0);
+        p.setOutputBitsCount(1);
+        p.getOutputBitsLocations().push( new Vector2d(24, 12) );
+        clockTimeStart = (new Date()).getTime();
+        clockHalfTicksFromPreviousCheck = 0;
+    }
+    this.computeOutput = function() {
+        return (p.getState()==1) ? "1" : "0";
+    }
+    this.toggle = function() {
+        if (p.getState()==1)
+            p.setState(0); else
+            p.setState(1);
+        p.clearChanged();
+    }
+    this.setHight = function() {
+        p.setState(1);
+        p.clearChanged();
+    }
+    this.setLow = function() {
+        p.setState(0);
+        p.clearChanged();
+    }
+    this.getClockFullHalfTicks = function(now) {
+        return Math.floor( (now-clockTimeStart)/SIM_CLOCK_HALFCYCLE_TIME );
+    }
+    this.getClockHalfTicksFromPreviousCheck = function(now) {
+        var ht = this.getClockFullHalfTicks(now);
+        var diff = ht - clockHalfTicksFromPreviousCheck;
+        clockHalfTicksFromPreviousCheck = ht;
+        return diff;
+    }
+}
+
 
 /**
  *  Module base template
@@ -633,6 +708,9 @@ function ModuleObj()
             case "Input"    : obj.configureAs(OBJ_INPUT); break;
             case "Output"   : obj.configureAs(OBJ_OUTPUT); break;
             case "WireLink" : obj.configureAs(OBJ_WIRELINK); break;
+            case "Clock"    : obj.configureAs(OBJ_CLOCK); break;
+            case "Hight"    : obj.configureAs(OBJ_HIGHT); break;
+            case "Low"      : obj.configureAs(OBJ_LOW); break;
         }
     }
     this.rotate = function(rot) {
