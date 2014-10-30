@@ -1,8 +1,7 @@
 var SIM_FLAG_NON_STABLE = false;
-var SIM_NON_STABLE_MAX = 10;
 var PIN_SIZE = 8;
-var SIM_SWITCH_DELAY = 0;                                           // ms
-var SIM_CLOCK_FREQUENCY = 4.0;                                      // Hz
+var SIM_SWITCH_DELAY = 2000;                                        // ms
+var SIM_CLOCK_FREQUENCY = 0.2;                                      // Hz
 var SIM_CLOCK_HALFCYCLE_TIME = (1000.0/SIM_CLOCK_FREQUENCY) / 2.0;  // ms
 var DEBUG_INDENT = "    ";
 var execTimeStart = new Date().getTime();
@@ -554,17 +553,19 @@ function GateNand(__p)
     }
     this.computeOutput = function() {
         var tmp;
+        var newState = 0;
         switch (p.getInput()) {
-            case "??": tmp = "1"; break;
-            case "?0": tmp = "1"; break;
-            case "?1": tmp = "1"; break;
-            case "0?": tmp = "1"; break;
-            case "00": tmp = "1"; break;
-            case "01": tmp = "1"; break;
-            case "1?": tmp = "1"; break;
-            case "10": tmp = "1"; break;
-            case "11": tmp = "0"; break;
+            case "??": tmp = "1"; newState = 0; break;
+            case "?0": tmp = "1"; newState = 0; break;
+            case "?1": tmp = "1"; newState = 1; break;
+            case "0?": tmp = "1"; newState = 0; break;
+            case "00": tmp = "1"; newState = 0; break;
+            case "01": tmp = "1"; newState = 1; break;
+            case "1?": tmp = "1"; newState = 2; break;
+            case "10": tmp = "1"; newState = 2; break;
+            case "11": tmp = "0"; newState = 3; break;
         }
+        p.setState(newState);
         return tmp;
     }
 }

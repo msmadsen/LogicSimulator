@@ -12,6 +12,7 @@ var EDIT_MODE_WIRELINK = 7;
 var EDIT_MODE_OUTPUT = 8;
 var EDIT_MODE_CLOCK = 9;
 
+var SIM_SHOW_REAL_DEVICES = true;
 var SIM_IS_RUNNING = false;
 var SIM_GATE_DELAY_MODE = 0;
 var SIM_STABLE_NET_MODE = 1;
@@ -301,6 +302,14 @@ function CpuSimEditor()
         if (oTyp=='Clock')
             oTyp = 'Input';
         
+        if (oTyp=='GateNand') {
+            if (SIM_SHOW_REAL_DEVICES) {
+                oTyp = 'RealGateNand';
+            } else {
+                oSta = 0;
+            }
+        }
+        
         image = document.getElementById(oTyp+'_sel-'+oSel+'_state-'+oSta+'_rot-'+oRot);
         
         ctx.drawImage(image, objXY.getX(), objXY.getY(), objDim.getX(), objDim.getY());
@@ -404,9 +413,9 @@ function CpuSimEditor()
             ctx.stroke();
             
             ctx.lineWidth = canvasConnSignalDiameter;
-            if (bitState=="0")
-                ctx.strokeStyle = "white"; else
-                ctx.strokeStyle = "red";
+            if (bitState=="1")
+                ctx.strokeStyle = "red"; else
+                ctx.strokeStyle = "white";
             ctx.beginPath();
             ctx.moveTo(pinXY_A.getX(), pinXY_A.getY());
             ctx.bezierCurveTo(pinCtrlXY_A.getX(), pinCtrlXY_A.getY(), pinCtrlXY_B.getX(), pinCtrlXY_B.getY(), pinXY_B.getX(), pinXY_B.getY());

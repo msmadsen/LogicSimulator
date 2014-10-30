@@ -6,10 +6,10 @@ TODO aktualne:
     + szybki zapis i odczyt projektu (na razie wersja alpha)
     + usuniecie __input __output z modulu
     + usuniecie bitLength z connection lub zastapienie je jednym (przeciez zawsze bitLenA==bitLenB)
-    - testy petli symulacji:
+    + testy petli symulacji:
           a)  [+]  wywalic floating wire
           b)  [+]  dac tylko informacje jak siec jest niestabilna bez zatrzymywania symulacji
-          c)  [-]  obczaic jak to w koncu symulowac z roznych trybow symulacji
+          c)  [+]  obczaic jak to w koncu symulowac z roznych trybow symulacji
                     {
                         [ ### nowy schemat ### ]
                         INPUT - new      to co przychodzi z zewnatrz i jest 'nowe' a jeszcze nie przepropagowalo
@@ -47,12 +47,17 @@ TODO aktualne:
     
     // NA PIERWSZY OGIEN   !!!!!!!!!!!      ------------------
     + nowy model symulacji
-    - dodanie obiektu CLOCK
+    + dodanie obiektu CLOCK
     - dodanie obiektu input HIGHT, LOW
-    - 
+    - symulacja ustalic wszystkie tryby (uwzglednic: stan 0 dla braku zasilania, dodac stan goingTo, flaga stanu sym braku zasilania/pokazywania real)
     - obrazki dla wszystkich typow bramek, rotacji i stanow wewnetrznych
     // NA PIERWSZY OGIEN   !!!!!!!!!!!      ------------------
 
+    
+    - flaga wlaczenia/wylaczenia zasialania (wtedy bramki nigdy nie daja 1 tylko zawsze ZERO!)
+    - flaga pokazywania/ukrywania prawdziwnej konstrukcji bramek ( !tylko! dla NAND, NOT, INPUT oraz moze pozniej NOR)
+    - stan 0 oznacza brak zasilania (wynik wprowadzenia stanu braku zasialania) TODO zamienic nazwy stanow
+    - stan aktyalny i stan goingTo
     - usunac objectName z obiektow generic (zrobic to w configu i tylko ID to stringa)
     - rotacja paru zaznaczonych wzgledem zbiorczego srodka
     - obiekt RAM (adress, dataIn, dataOut, W/!R) - rozmiar mozna zmieniac z toolboxa jak left/right jak nic nie jest przypiete
